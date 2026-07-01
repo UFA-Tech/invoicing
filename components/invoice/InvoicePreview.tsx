@@ -27,34 +27,36 @@ function ItemsTable({
 }) {
   const filled = items?.filter((i) => i.description) ?? [];
   return (
-    <table className="w-full mb-5 text-sm">
-      <thead>
-        <tr className={thClass}>
-          <th className="text-left py-2 px-2 font-semibold text-xs uppercase tracking-wide">Deskripsi</th>
-          <th className="text-center py-2 px-2 font-semibold text-xs uppercase tracking-wide">Qty</th>
-          <th className="text-center py-2 px-2 font-semibold text-xs uppercase tracking-wide">Sat.</th>
-          <th className="text-right py-2 px-2 font-semibold text-xs uppercase tracking-wide">Harga</th>
-          <th className="text-right py-2 px-2 font-semibold text-xs uppercase tracking-wide">Total</th>
-        </tr>
-      </thead>
-      <tbody>
-        {filled.length ? (
-          filled.map((item, i) => (
-            <tr key={i} className={`border-b border-slate-100 ${i % 2 === 1 ? evenRowClass : ""}`}>
-              <td className="py-2 px-2 text-slate-700">{item.description}</td>
-              <td className="py-2 px-2 text-center text-slate-500">{item.quantity}</td>
-              <td className="py-2 px-2 text-center text-slate-400 text-xs">{item.unit || "—"}</td>
-              <td className="py-2 px-2 text-right text-slate-500 text-xs font-mono">{formatCurrency(item.unitPrice || 0, currency)}</td>
-              <td className="py-2 px-2 text-right font-mono text-xs font-medium text-slate-800">{formatCurrency(item.amount || 0, currency)}</td>
-            </tr>
-          ))
-        ) : (
-          <tr>
-            <td colSpan={5} className="py-6 text-center text-slate-300 text-xs italic">Item invoice akan muncul di sini...</td>
+    <div className="overflow-x-auto mb-5">
+      <table className="w-full min-w-96 text-sm">
+        <thead>
+          <tr className={thClass}>
+            <th className="text-left py-2 px-2 font-semibold text-xs uppercase tracking-wide">Deskripsi</th>
+            <th className="text-center py-2 px-2 font-semibold text-xs uppercase tracking-wide">Qty</th>
+            <th className="text-center py-2 px-2 font-semibold text-xs uppercase tracking-wide">Sat.</th>
+            <th className="text-right py-2 px-2 font-semibold text-xs uppercase tracking-wide">Harga</th>
+            <th className="text-right py-2 px-2 font-semibold text-xs uppercase tracking-wide">Total</th>
           </tr>
-        )}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {filled.length ? (
+            filled.map((item, i) => (
+              <tr key={i} className={`border-b border-slate-100 ${i % 2 === 1 ? evenRowClass : ""}`}>
+                <td className="py-2 px-2 text-slate-700">{item.description}</td>
+                <td className="py-2 px-2 text-center text-slate-500">{item.quantity}</td>
+                <td className="py-2 px-2 text-center text-slate-400 text-xs">{item.unit || "—"}</td>
+                <td className="py-2 px-2 text-right text-slate-500 text-xs font-mono">{formatCurrency(item.unitPrice || 0, currency)}</td>
+                <td className="py-2 px-2 text-right font-mono text-xs font-medium text-slate-800">{formatCurrency(item.amount || 0, currency)}</td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan={5} className="py-6 text-center text-slate-300 text-xs italic">Item invoice akan muncul di sini...</td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
@@ -71,26 +73,28 @@ function TotalsBlock({
 }) {
   return (
     <div className="flex justify-end">
-      <div className="w-56 space-y-1">
-        <div className="flex justify-between text-xs text-slate-500">
-          <span>Subtotal</span>
-          <span className="font-mono">{formatCurrency(data.subtotal || 0, data.currency)}</span>
+      <div className="w-56 max-w-full min-w-0 space-y-1">
+        <div className="flex justify-between gap-4 text-xs text-slate-500">
+          <span className="shrink-0">Subtotal</span>
+          <span className="font-mono text-right">{formatCurrency(data.subtotal || 0, data.currency)}</span>
         </div>
         {Number(data.taxRate) > 0 && (
-          <div className="flex justify-between text-xs text-slate-500">
-            <span>Pajak ({data.taxRate}%)</span>
-            <span className="font-mono">{formatCurrency(data.taxAmount || 0, data.currency)}</span>
+          <div className="flex justify-between gap-4 text-xs text-slate-500">
+            <span className="shrink-0">Pajak ({data.taxRate}%)</span>
+            <span className="font-mono text-right">{formatCurrency(data.taxAmount || 0, data.currency)}</span>
           </div>
         )}
         {Number(data.discount) > 0 && (
-          <div className="flex justify-between text-xs text-slate-500">
-            <span>Diskon</span>
-            <span className="font-mono text-red-500">-{formatCurrency(data.discount || 0, data.currency)}</span>
+          <div className="flex justify-between gap-4 text-xs text-slate-500">
+            <span className="shrink-0">Diskon</span>
+            <span className="font-mono text-right text-red-500">-{formatCurrency(data.discount || 0, data.currency)}</span>
           </div>
         )}
-        <div className={`flex justify-between px-3 py-2 mt-1 rounded-lg ${totalRowClass}`}>
-          <span className={`text-xs font-bold ${totalTextClass}`}>TOTAL</span>
-          <span className={`font-mono font-bold text-sm ${totalValueClass}`}>{formatCurrency(data.total || 0, data.currency)}</span>
+        <div className={`flex items-center justify-between gap-3 px-3 py-2 mt-1 rounded-lg ${totalRowClass}`}>
+          <span className={`text-xs font-bold shrink-0 ${totalTextClass}`}>TOTAL</span>
+          <span className={`font-mono font-bold text-sm text-right min-w-0 ${totalValueClass}`}>
+            {formatCurrency(data.total || 0, data.currency)}
+          </span>
         </div>
       </div>
     </div>
@@ -280,8 +284,8 @@ function MinimalPreview({ data, business }: { data: Partial<InvoiceFormData>; bu
       </div>
 
       {/* Table — headless style */}
-      <div className="mb-4">
-        <div className="flex border-b border-slate-900 pb-1 mb-2">
+      <div className="mb-4 overflow-x-auto">
+        <div className="min-w-80 flex border-b border-slate-900 pb-1 mb-2">
           <span className="flex-3 text-xs text-slate-500 uppercase tracking-wide">Deskripsi</span>
           <span className="flex-1 text-center text-xs text-slate-500 uppercase tracking-wide">Qty</span>
           <span className="flex-2 text-right text-xs text-slate-500 uppercase tracking-wide">Harga</span>
@@ -303,26 +307,26 @@ function MinimalPreview({ data, business }: { data: Partial<InvoiceFormData>; bu
 
       {/* Totals — just text, then double rule for grand total */}
       <div className="flex justify-end">
-        <div className="w-52 space-y-1">
-          <div className="flex justify-between text-xs text-slate-500">
-            <span>Subtotal</span>
-            <span className="font-mono">{formatCurrency(data.subtotal || 0, data.currency)}</span>
+        <div className="w-52 max-w-full min-w-0 space-y-1">
+          <div className="flex justify-between gap-4 text-xs text-slate-500">
+            <span className="shrink-0">Subtotal</span>
+            <span className="font-mono text-right">{formatCurrency(data.subtotal || 0, data.currency)}</span>
           </div>
           {Number(data.taxRate) > 0 && (
-            <div className="flex justify-between text-xs text-slate-500">
-              <span>Pajak ({data.taxRate}%)</span>
-              <span className="font-mono">{formatCurrency(data.taxAmount || 0, data.currency)}</span>
+            <div className="flex justify-between gap-4 text-xs text-slate-500">
+              <span className="shrink-0">Pajak ({data.taxRate}%)</span>
+              <span className="font-mono text-right">{formatCurrency(data.taxAmount || 0, data.currency)}</span>
             </div>
           )}
           {Number(data.discount) > 0 && (
-            <div className="flex justify-between text-xs text-slate-500">
-              <span>Diskon</span>
-              <span className="font-mono text-red-500">-{formatCurrency(data.discount || 0, data.currency)}</span>
+            <div className="flex justify-between gap-4 text-xs text-slate-500">
+              <span className="shrink-0">Diskon</span>
+              <span className="font-mono text-right text-red-500">-{formatCurrency(data.discount || 0, data.currency)}</span>
             </div>
           )}
-          <div className="border-t-2 border-slate-900 pt-1 mt-1 flex justify-between">
-            <span className="text-sm font-bold text-slate-900">Total</span>
-            <span className="font-mono font-bold text-sm text-slate-900">{formatCurrency(data.total || 0, data.currency)}</span>
+          <div className="border-t-2 border-slate-900 pt-1 mt-1 flex items-center justify-between gap-3">
+            <span className="text-sm font-bold text-slate-900 shrink-0">Total</span>
+            <span className="font-mono font-bold text-sm text-right text-slate-900 min-w-0">{formatCurrency(data.total || 0, data.currency)}</span>
           </div>
         </div>
       </div>
