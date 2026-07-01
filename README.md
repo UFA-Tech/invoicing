@@ -23,6 +23,7 @@ Aplikasi invoicing berbasis web untuk freelancer dan UMKM Indonesia. Buat, kelol
 | Font      | Plus Jakarta Sans                      |
 | Auth      | NextAuth.js v5 (Google OAuth)          |
 | Database  | PostgreSQL + Prisma 7                  |
+| Storage   | Vercel Blob (logo bisnis)              |
 | PDF       | @react-pdf/renderer                    |
 | Email     | Nodemailer                             |
 | Form      | React Hook Form + Zod 4                |
@@ -246,6 +247,77 @@ public/
 ## Catatan Penting
 
 - **Dua file env** dibutuhkan: `.env` hanya untuk Prisma CLI, `.env.local` untuk Next.js. Jangan gabungkan keduanya.
-- **Logo upload** disimpan di `public/uploads/logos/` — pastikan direktori ini writable dan tidak di-`.gitignore` jika ingin logo tersimpan saat deploy.
+- **Logo upload** disimpan di Vercel Blob (production) atau `public/uploads/logos/` (lokal legacy). Vercel Blob memerlukan `BLOB_READ_WRITE_TOKEN`.
 - Setelah mengubah `prisma/schema.prisma`, selalu jalankan `npx prisma migrate dev` lalu `npx prisma generate`, kemudian **restart dev server**.
 - Template PDF menggunakan font bawaan (`Helvetica`, `Helvetica-Bold`) — tidak memerlukan koneksi internet saat generate PDF.
+
+---
+
+## Deploy ke Vercel
+
+### 1. Siapkan Database di Neon
+
+1. Buat akun di [neon.tech](https://neon.tech) → buat project baru
+2. Salin **Connection String** (format `postgresql://...`) dari dashboard Neon
+3. Gunakan string ini sebagai `DATABASE_URL` di langkah berikut
+
+### 2. Buat Vercel Blob Store
+
+1. Di dashboard Vercel → pilih project → tab **Storage**
+2. Klik **Create Database → Blob**
+3. Setelah dibuat, buka tab **Tokens** dan salin `BLOB_READ_WRITE_TOKEN`
+
+### 3. Deploy ke Vercel
+
+```bash
+npm install -g vercel
+vercel                  # ikuti wizard, pilih project baru
+```
+
+Atau hubungkan repository GitHub di [vercel.com/new](https://vercel.com/new).
+
+### 4. Set Environment Variables di Vercel
+
+Di **Vercel Dashboard → project → Settings → Environment Variables**, tambahkan semua variabel berikut:
+
+| Variabel | Nilai |
+| -------- | ----- |
+| `DATABASE_URL` | Connection string Neon |
+| `NEXTAUTH_SECRET` | Output `openssl rand -base64 32` |
+| `NEXTAUTH_URL` | `https://namadomain-anda.vercel.app` |
+| `GOOGLE_CLIENT_ID` | Dari Google Cloud Console |
+| `GOOGLE_CLIENT_SECRET` | Dari Google Cloud Console |
+| `SMTP_HOST` | `smtp.gmail.com` |
+| `SMTP_PORT` | `587` |
+| `SMTP_USER` | Email pengirim |
+| `SMTP_PASS` | Gmail App Password |
+| `SMTP_FROM` | Email pengirim |
+| `BLOB_READ_WRITE_TOKEN` | Token dari Vercel Blob |
+
+### 5. Tambahkan Redirect URI di Google Cloud Console
+
+Di **APIs & Services → Credentials → OAuth 2.0 Client**, tambahkan URI berikut ke **Authorized redirect URIs**:
+
+```text
+https://namadomain-anda.vercel.app/api/auth/callback/google
+```
+
+### 6. Jalankan Migrasi Database Produksi
+
+Setelah deploy pertama, jalankan migrasi dari mesin lokal dengan `DATABASE_URL` Neon:
+
+```bash
+DATABASE_URL="postgresql://..." npx prisma migrate deploy
+```
+
+Atau set `DATABASE_URL` di `.env` lokal ke Neon, lalu:
+
+```bash
+npx prisma migrate deploy
+```
+
+Perintah ini menerapkan semua migrasi yang ada ke database produksi tanpa membuat migrasi baru.
+
+### 7. Tes di Production
+
+Deploy ulang otomatis terjadi setiap push ke main branch. Buka `https://namadomain-anda.vercel.app` dan login dengan Google.

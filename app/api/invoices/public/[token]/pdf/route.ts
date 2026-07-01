@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readFileSync } from "fs";
-import path from "path";
 import { prisma } from "@/lib/prisma";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { createElement } from "react";
 import { getTemplate } from "@/components/invoice/templates";
+import { logoToDataUrl } from "@/lib/logo";
 
 export async function GET(
   _request: NextRequest,
@@ -39,18 +38,7 @@ export async function GET(
 
     const user = invoice.user;
 
-    let logoDataUrl: string | null = null;
-    if (user?.logoUrl) {
-      try {
-        const logoPath = path.join(process.cwd(), "public", user.logoUrl);
-        const logoBuffer = readFileSync(logoPath);
-        const ext = path.extname(user.logoUrl).slice(1).toLowerCase();
-        const mime = ext === "png" ? "image/png" : ext === "gif" ? "image/gif" : "image/jpeg";
-        logoDataUrl = `data:${mime};base64,${logoBuffer.toString("base64")}`;
-      } catch {
-        // Logo file missing — skip silently
-      }
-    }
+    const logoDataUrl = user?.logoUrl ? await logoToDataUrl(user.logoUrl) : null;
 
     const normalizedInvoice = {
       ...invoice,
