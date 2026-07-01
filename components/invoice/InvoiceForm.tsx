@@ -46,7 +46,7 @@ const invoiceSchema = z.object({
   invoiceNumber: z.string().min(1, "Nomor invoice wajib diisi"),
   status: z.nativeEnum(InvoiceStatus),
   issueDate: z.date({ error: "Tanggal wajib diisi" }),
-  dueDate: z.date({ error: "Jatuh tempo wajib diisi" }),
+  dueDate: z.date().optional(),
   currency: z.string(),
   client: z.object({
     id: z.string().optional(),
@@ -127,7 +127,7 @@ export function InvoiceForm({ business, invoiceToEdit, nextInvoiceNumber }: Invo
           invoiceNumber: invoiceToEdit.invoiceNumber,
           status: invoiceToEdit.status,
           issueDate: new Date(invoiceToEdit.issueDate),
-          dueDate: new Date(invoiceToEdit.dueDate),
+          dueDate: invoiceToEdit.dueDate ? new Date(invoiceToEdit.dueDate) : undefined,
           currency: invoiceToEdit.currency,
           client: {
             id: invoiceToEdit.client?.id,
@@ -157,7 +157,7 @@ export function InvoiceForm({ business, invoiceToEdit, nextInvoiceNumber }: Invo
           invoiceNumber: nextInvoiceNumber ?? "",
           status: InvoiceStatus.DRAFT,
           issueDate: new Date(),
-          dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+          dueDate: undefined,
           currency: business.defaultCurrency ?? "IDR",
           client: { name: "", email: "", phone: "", address: "", company: "" },
           items: [{ description: "", quantity: 1, unitPrice: 0, amount: 0, unit: "" }],
@@ -192,7 +192,7 @@ export function InvoiceForm({ business, invoiceToEdit, nextInvoiceNumber }: Invo
       const payload = {
         ...values,
         issueDate: values.issueDate.toISOString(),
-        dueDate: values.dueDate.toISOString(),
+        dueDate: values.dueDate?.toISOString(),
       };
 
       const res = invoiceToEdit
@@ -311,7 +311,7 @@ export function InvoiceForm({ business, invoiceToEdit, nextInvoiceNumber }: Invo
                     name="dueDate"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Jatuh Tempo *</FormLabel>
+                        <FormLabel>Jatuh Tempo</FormLabel>
                         <Popover>
                           <PopoverTrigger
                             className={cn(

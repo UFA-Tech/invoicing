@@ -9,7 +9,7 @@ interface RecentInvoice {
   status: InvoiceStatus;
   total: number;
   currency: string;
-  dueDate: string;
+  dueDate: string | null;
   client: { name: string } | null;
 }
 
@@ -46,7 +46,7 @@ export function RecentInvoices({ invoices }: { invoices: RecentInvoice[] }) {
                 {formatCurrency(Number(invoice.total), invoice.currency)}
               </p>
               <p className="text-xs text-slate-400 dark:text-slate-500">
-                {formatDate(invoice.dueDate)}
+                {invoice.dueDate ? formatDate(invoice.dueDate) : "—"}
               </p>
             </div>
             <InvoiceStatusBadge status={invoice.status} />

@@ -65,6 +65,7 @@ export async function GET() {
 
   const agingBuckets = { "1–30 hr": 0, "31–60 hr": 0, "61–90 hr": 0, ">90 hr": 0 };
   for (const inv of unpaidInvoices) {
+    if (!inv.dueDate) continue;
     const days = differenceInDays(now, inv.dueDate);
     if (days <= 30) agingBuckets["1–30 hr"] += Number(inv.total);
     else if (days <= 60) agingBuckets["31–60 hr"] += Number(inv.total);

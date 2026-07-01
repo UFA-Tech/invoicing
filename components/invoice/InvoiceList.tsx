@@ -53,7 +53,7 @@ interface Invoice {
   invoiceNumber: string;
   status: InvoiceStatus;
   issueDate: string;
-  dueDate: string;
+  dueDate: string | null;
   total: number;
   currency: string;
   client: { name: string; email: string } | null;
@@ -319,7 +319,7 @@ export function InvoiceList() {
                         #{invoice.invoiceNumber}
                       </Link>
                       <p className="text-sm text-slate-700 dark:text-slate-300 truncate">{invoice.client?.name ?? "—"}</p>
-                      <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Jatuh tempo: {formatDate(invoice.dueDate)}</p>
+                      {invoice.dueDate && <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Jatuh tempo: {formatDate(invoice.dueDate)}</p>}
                     </div>
                   </div>
                   <div className="flex items-start gap-2 shrink-0">
@@ -455,7 +455,7 @@ export function InvoiceList() {
                       </div>
                     </TableCell>
                     <TableCell className="text-sm text-slate-600 dark:text-slate-400">{formatDate(invoice.issueDate)}</TableCell>
-                    <TableCell className="text-sm text-slate-600 dark:text-slate-400">{formatDate(invoice.dueDate)}</TableCell>
+                    <TableCell className="text-sm text-slate-600 dark:text-slate-400">{invoice.dueDate ? formatDate(invoice.dueDate) : "—"}</TableCell>
                     <TableCell className="text-right font-mono text-sm font-semibold">
                       {formatCurrency(Number(invoice.total), invoice.currency)}
                     </TableCell>

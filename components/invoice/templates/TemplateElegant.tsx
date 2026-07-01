@@ -117,7 +117,7 @@ export function TemplateElegant({ invoice, business }: Props) {
               <Text style={styles.invoiceLabel}>INVOICE</Text>
               <Text style={styles.invoiceNum}>#{invoice.invoiceNumber}</Text>
               <Text style={styles.dateInfo}>Tanggal: {fmtDate(invoice.issueDate)}</Text>
-              <Text style={styles.dateInfo}>Jatuh Tempo: {fmtDate(invoice.dueDate)}</Text>
+              {invoice.dueDate && <Text style={styles.dateInfo}>Jatuh Tempo: {fmtDate(invoice.dueDate)}</Text>}
             </View>
           </View>
 

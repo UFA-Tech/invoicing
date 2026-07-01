@@ -92,7 +92,7 @@ model Invoice {
   status        InvoiceStatus @default(DRAFT)
 
   issueDate DateTime @default(now())
-  dueDate   DateTime
+  dueDate   DateTime?
 
   subtotal  Decimal @db.Decimal(15, 2)
   taxRate   Decimal @default(0) @db.Decimal(5, 2)

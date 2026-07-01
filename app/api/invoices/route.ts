@@ -17,7 +17,7 @@ const invoiceSchema = z.object({
   invoiceNumber: z.string().min(1),
   status: z.nativeEnum(InvoiceStatus),
   issueDate: z.string(),
-  dueDate: z.string(),
+  dueDate: z.string().optional(),
   currency: z.string().default("IDR"),
   template: z.string().default("classic"),
   client: z.object({
@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
           invoiceNumber,
           status: data.status,
           issueDate: new Date(data.issueDate),
-          dueDate: new Date(data.dueDate),
+          dueDate: data.dueDate ? new Date(data.dueDate) : null,
           subtotal: data.subtotal,
           taxRate: data.taxRate,
           taxAmount: data.taxAmount,

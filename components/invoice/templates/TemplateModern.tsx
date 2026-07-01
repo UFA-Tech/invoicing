@@ -83,7 +83,7 @@ export function TemplateModern({ invoice, business }: Props) {
             <Text style={styles.sidebarLabel}>Tanggal</Text>
             <Text style={styles.sidebarValue}>{fmtDate(invoice.issueDate)}</Text>
             <Text style={styles.sidebarLabel}>Jatuh Tempo</Text>
-            <Text style={styles.sidebarValue}>{fmtDate(invoice.dueDate)}</Text>
+            <Text style={styles.sidebarValue}>{invoice.dueDate ? fmtDate(invoice.dueDate) : "—"}</Text>
             <Text style={styles.sidebarLabel}>Status</Text>
             <View style={styles.statusBadge}>
               <Text style={styles.statusText}>{invoice.status}</Text>

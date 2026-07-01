@@ -144,7 +144,7 @@ export default async function DashboardPage() {
               status: inv.status,
               total: Number(inv.total),
               currency: inv.currency,
-              dueDate: inv.dueDate.toISOString(),
+              dueDate: inv.dueDate ? inv.dueDate.toISOString() : null,
               client: inv.client ? { name: inv.client.name } : null,
             }))}
           />

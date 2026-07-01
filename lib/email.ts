@@ -7,7 +7,7 @@ interface SendInvoiceEmailOptions {
   clientName: string;
   invoiceNumber: string;
   invoiceTotal: string;
-  dueDate: string;
+  dueDate: string | null;
   businessName: string;
   businessEmail: string;
   pdfBuffer: Buffer;
@@ -52,7 +52,7 @@ export async function sendInvoiceEmail({
               </tr>
               <tr>
                 <td style="color:#64748b;font-size:13px;padding:4px 0;">Jatuh Tempo</td>
-                <td style="color:#dc2626;font-weight:600;font-size:13px;text-align:right;">${dueDate}</td>
+                <td style="color:#dc2626;font-weight:600;font-size:13px;text-align:right;">${dueDate ?? "—"}</td>
               </tr>
               <tr style="border-top:1px solid #e2e8f0;">
                 <td style="color:#64748b;font-size:15px;padding:12px 0 4px 0;font-weight:600;">Total Tagihan</td>

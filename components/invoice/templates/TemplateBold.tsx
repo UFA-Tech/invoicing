@@ -114,7 +114,7 @@ export function TemplateBold({ invoice, business }: Props) {
               </View>
               <View style={styles.dateBadge}>
                 <Text style={styles.dateBadgeLabel}>Jatuh Tempo</Text>
-                <Text style={styles.dateBadgeValue}>{fmtDate(invoice.dueDate)}</Text>
+                <Text style={styles.dateBadgeValue}>{invoice.dueDate ? fmtDate(invoice.dueDate) : "—"}</Text>
               </View>
             </View>
           </View>

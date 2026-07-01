@@ -95,7 +95,7 @@ export function TemplateMinimal({ invoice, business }: Props) {
           </View>
           <View style={styles.metaBlock}>
             <Text style={styles.metaLabel}>Jatuh Tempo</Text>
-            <Text style={styles.metaValue}>{fmtDate(invoice.dueDate)}</Text>
+            <Text style={styles.metaValue}>{invoice.dueDate ? fmtDate(invoice.dueDate) : "—"}</Text>
           </View>
           <View style={styles.metaBlock}>
             <Text style={styles.metaLabel}>Status</Text>

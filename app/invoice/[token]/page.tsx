@@ -54,7 +54,7 @@ export default async function PublicInvoicePage({
     invoiceNumber: invoice.invoiceNumber,
     status: invoice.status,
     issueDate: invoice.issueDate,
-    dueDate: invoice.dueDate,
+    dueDate: invoice.dueDate ?? undefined,
     currency: invoice.currency,
     template: invoice.template,
     client: invoice.client

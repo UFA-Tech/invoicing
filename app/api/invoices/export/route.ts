@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
     inv.invoiceNumber,
     inv.status,
     format(inv.issueDate, "dd/MM/yyyy"),
-    format(inv.dueDate, "dd/MM/yyyy"),
+    inv.dueDate ? format(inv.dueDate, "dd/MM/yyyy") : "",
     inv.client?.name ?? "",
     inv.client?.email ?? "",
     inv.client?.company ?? "",

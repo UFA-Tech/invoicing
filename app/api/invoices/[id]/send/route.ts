@@ -52,7 +52,7 @@ export async function POST(
       clientName: invoice.client.name,
       invoiceNumber: invoice.invoiceNumber,
       invoiceTotal: formatCurrency(Number(invoice.total), invoice.currency),
-      dueDate: formatDate(invoice.dueDate),
+      dueDate: invoice.dueDate ? formatDate(invoice.dueDate) : null,
       businessName: user?.businessName ?? session.user.name ?? "Bisnis Anda",
       businessEmail: user?.businessEmail ?? session.user.email ?? "",
       pdfBuffer,

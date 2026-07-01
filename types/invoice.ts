@@ -30,7 +30,7 @@ export interface InvoiceFormData {
   invoiceNumber: string;
   status: InvoiceStatus;
   issueDate: Date;
-  dueDate: Date;
+  dueDate?: Date;
   currency: string;
   template: string;
   client: ClientInput;
@@ -68,7 +68,7 @@ export interface InvoiceWithRelations {
   invoiceNumber: string;
   status: InvoiceStatus;
   issueDate: Date;
-  dueDate: Date;
+  dueDate: Date | null;
   subtotal: number;
   taxRate: number;
   taxAmount: number;

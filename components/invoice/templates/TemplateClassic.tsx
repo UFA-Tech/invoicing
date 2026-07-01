@@ -98,7 +98,7 @@ export function TemplateClassic({ invoice, business }: Props) {
             </View>
             <View style={styles.metaRow}>
               <Text style={styles.metaLabel}>Jatuh Tempo</Text>
-              <Text style={styles.metaValue}>{fmtDate(invoice.dueDate)}</Text>
+              <Text style={styles.metaValue}>{invoice.dueDate ? fmtDate(invoice.dueDate) : "—"}</Text>
             </View>
             <View style={styles.metaRow}>
               <Text style={styles.metaLabel}>Status</Text>

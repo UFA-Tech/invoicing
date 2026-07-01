@@ -46,7 +46,8 @@ export function calculateInvoiceTotals(
   return { subtotal, taxAmount, total };
 }
 
-export function isOverdue(dueDate: Date | string, status: string): boolean {
+export function isOverdue(dueDate: Date | string | null | undefined, status: string): boolean {
+  if (!dueDate) return false;
   if (status === "PAID" || status === "CANCELLED") return false;
   return new Date(dueDate) < new Date();
 }
