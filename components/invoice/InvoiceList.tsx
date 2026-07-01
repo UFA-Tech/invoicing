@@ -207,26 +207,32 @@ export function InvoiceList() {
   return (
     <div className="space-y-4">
       {/* Filters + export */}
-      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-        <div className="relative flex-1 max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input
-            placeholder="Cari klien atau nomor invoice..."
-            className="pl-9"
-            defaultValue={search}
-            onChange={(e) => {
-              const val = e.target.value;
-              if (searchTimer) clearTimeout(searchTimer);
-              searchTimer = setTimeout(() => updateParam("search", val), 400);
-            }}
-          />
+      <div className="flex flex-col gap-3">
+        <div className="flex gap-2">
+          <div className="relative flex-1 sm:max-w-xs">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Input
+              placeholder="Cari klien atau nomor..."
+              className="pl-9"
+              defaultValue={search}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (searchTimer) clearTimeout(searchTimer);
+                searchTimer = setTimeout(() => updateParam("search", val), 400);
+              }}
+            />
+          </div>
+          <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={() => exportCsv()}>
+            <FileDown className="w-4 h-4" />
+            <span className="hidden sm:inline">Export CSV</span>
+          </Button>
         </div>
-        <div className="flex gap-1 flex-wrap flex-1">
+        <div className="flex gap-1 overflow-x-auto pb-1 sm:flex-wrap sm:pb-0">
           {STATUS_TABS.map((tab) => (
             <button
               key={tab.value}
               onClick={() => updateParam("status", tab.value)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors shrink-0 ${
                 status === tab.value
                   ? "bg-slate-900 text-white"
                   : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
@@ -236,17 +242,13 @@ export function InvoiceList() {
             </button>
           ))}
         </div>
-        <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={() => exportCsv()}>
-          <FileDown className="w-4 h-4" />
-          Export CSV
-        </Button>
       </div>
 
       {/* Bulk action bar */}
       {someSelected && (
-        <div className="flex items-center gap-3 bg-slate-900 text-white rounded-xl px-4 py-2.5">
+        <div className="flex flex-wrap items-center gap-2 bg-slate-900 text-white rounded-xl px-4 py-2.5">
           <span className="text-sm font-medium">{selectedIds.size} dipilih</span>
-          <div className="flex gap-2 ml-auto items-center">
+          <div className="flex gap-2 ml-auto items-center flex-wrap">
             <Button
               size="sm"
               className="h-7 text-xs bg-slate-700 hover:bg-slate-600 text-white border-0"
@@ -283,8 +285,107 @@ export function InvoiceList() {
         </div>
       )}
 
-      {/* Table */}
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+      {/* Mobile card list */}
+      <div className="sm:hidden space-y-2">
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
+          </div>
+        ) : invoices.length === 0 ? (
+          <div className="text-center py-12 text-slate-400 text-sm">
+            {search || status ? "Tidak ada invoice yang cocok" : "Belum ada invoice. Buat invoice pertama Anda!"}
+          </div>
+        ) : (
+          invoices.map((invoice) => {
+            const checked = selectedIds.has(invoice.id);
+            return (
+              <div
+                key={invoice.id}
+                className={`bg-white rounded-xl border border-slate-200 p-4 transition-colors ${checked ? "border-slate-400 bg-slate-50" : ""}`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3 min-w-0">
+                    <button
+                      onClick={() => toggleSelect(invoice.id)}
+                      className={`flex items-center justify-center w-5 h-5 rounded border transition-colors shrink-0 mt-0.5 ${
+                        checked ? "bg-slate-900 border-slate-900" : "border-slate-300"
+                      }`}
+                      aria-label="Pilih invoice"
+                    >
+                      {checked && <CheckCircle className="w-3.5 h-3.5 text-white" />}
+                    </button>
+                    <div className="min-w-0">
+                      <Link href={`/invoices/${invoice.id}`} className="font-mono text-sm font-semibold text-slate-800 hover:text-blue-600">
+                        #{invoice.invoiceNumber}
+                      </Link>
+                      <p className="text-sm text-slate-700 truncate">{invoice.client?.name ?? "—"}</p>
+                      <p className="text-xs text-slate-400 mt-0.5">Jatuh tempo: {formatDate(invoice.dueDate)}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2 shrink-0">
+                    <div className="text-right">
+                      <p className="text-sm font-mono font-semibold text-slate-800">
+                        {formatCurrency(Number(invoice.total), invoice.currency)}
+                      </p>
+                      <div className="mt-1">
+                        <InvoiceStatusBadge status={invoice.status} />
+                      </div>
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger className="inline-flex items-center justify-center h-8 w-8 rounded-md hover:bg-slate-100 transition-colors">
+                        <MoreHorizontal className="w-4 h-4" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => router.push(`/invoices/${invoice.id}`)}>
+                          <Eye className="w-4 h-4 mr-2" />
+                          Lihat
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => router.push(`/invoices/${invoice.id}/edit`)}>
+                          <Pencil className="w-4 h-4 mr-2" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            const a = document.createElement("a");
+                            a.href = `/api/invoices/${invoice.id}/pdf`;
+                            a.download = `${invoice.invoiceNumber}.pdf`;
+                            a.click();
+                          }}
+                        >
+                          <Download className="w-4 h-4 mr-2" />
+                          Download PDF
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleSend(invoice.id)} disabled={actionLoading === invoice.id + "-send"}>
+                          {actionLoading === invoice.id + "-send" ? (
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          ) : (
+                            <Send className="w-4 h-4 mr-2" />
+                          )}
+                          Kirim Email
+                        </DropdownMenuItem>
+                        {invoice.status !== "PAID" && (
+                          <DropdownMenuItem onClick={() => handleMarkPaid(invoice.id)} disabled={actionLoading === invoice.id + "-paid"}>
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            Tandai Lunas
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem variant="destructive" onClick={() => handleDelete(invoice.id)} disabled={actionLoading === invoice.id + "-delete"}>
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Hapus
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden sm:block bg-white rounded-xl border border-slate-200 overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow className="bg-slate-50">

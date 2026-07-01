@@ -1,14 +1,6 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 
-export const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT) || 587,
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 interface SendInvoiceEmailOptions {
   to: string;
@@ -31,6 +23,8 @@ export async function sendInvoiceEmail({
   businessEmail,
   pdfBuffer,
 }: SendInvoiceEmailOptions) {
+  const from = process.env.RESEND_FROM ?? `noreply@${process.env.NEXTAUTH_URL?.replace(/https?:\/\//, "") ?? "yourdomain.com"}`;
+
   const html = `
     <!DOCTYPE html>
     <html lang="id">
@@ -79,8 +73,8 @@ export async function sendInvoiceEmail({
     </html>
   `;
 
-  await transporter.sendMail({
-    from: `"${businessName}" <${process.env.SMTP_FROM}>`,
+  const { error } = await resend.emails.send({
+    from: `${businessName} <${from}>`,
     to,
     subject: `Invoice ${invoiceNumber} dari ${businessName}`,
     html,
@@ -88,8 +82,11 @@ export async function sendInvoiceEmail({
       {
         filename: `${invoiceNumber}.pdf`,
         content: pdfBuffer,
-        contentType: "application/pdf",
       },
     ],
   });
+
+  if (error) {
+    throw new Error(error.message);
+  }
 }

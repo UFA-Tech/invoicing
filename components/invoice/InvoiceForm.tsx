@@ -234,7 +234,7 @@ export function InvoiceForm({ business, invoiceToEdit, nextInvoiceNumber }: Invo
                 <CardTitle className="text-base">Informasi Invoice</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="invoiceNumber"
@@ -274,7 +274,7 @@ export function InvoiceForm({ business, invoiceToEdit, nextInvoiceNumber }: Invo
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="issueDate"
@@ -417,7 +417,7 @@ export function InvoiceForm({ business, invoiceToEdit, nextInvoiceNumber }: Invo
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="client.name"
@@ -445,7 +445,7 @@ export function InvoiceForm({ business, invoiceToEdit, nextInvoiceNumber }: Invo
                     )}
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="client.company"
@@ -506,7 +506,7 @@ export function InvoiceForm({ business, invoiceToEdit, nextInvoiceNumber }: Invo
                 <CardTitle className="text-base">Ringkasan</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="taxRate"
@@ -612,15 +612,16 @@ export function InvoiceForm({ business, invoiceToEdit, nextInvoiceNumber }: Invo
               </CardContent>
             </Card>
 
-            <div className="flex gap-3">
+            <div className="flex flex-col-reverse sm:flex-row gap-3">
               <Button
                 type="button"
                 variant="outline"
+                className="w-full sm:w-auto"
                 onClick={() => router.back()}
               >
                 Batal
               </Button>
-              <Button type="submit" disabled={loading}>
+              <Button type="submit" disabled={loading} className="w-full sm:w-auto">
                 {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 {invoiceToEdit ? "Simpan Perubahan" : "Buat Invoice"}
               </Button>

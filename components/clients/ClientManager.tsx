@@ -236,7 +236,7 @@ export function ClientManager({ initialClients }: ClientManagerProps) {
                       <p className="text-xs text-slate-400 truncate">{client.phone}</p>
                     )}
                   </div>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                  <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0">
                     <Button
                       variant="ghost"
                       size="sm"

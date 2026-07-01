@@ -84,158 +84,86 @@ export function InvoiceLineItems({ form, currency, catalogItems = [] }: InvoiceL
 
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-12 gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wide pb-1 border-b">
-        <div className="col-span-4">Deskripsi</div>
-        <div className="col-span-2 text-center">Qty</div>
-        <div className="col-span-1 text-center">Satuan</div>
-        <div className="col-span-2 text-right">Harga</div>
-        <div className="col-span-2 text-right">Total</div>
-        <div className="col-span-1" />
-      </div>
-
       {fields.map((field, index) => (
-        <div key={field.id} className="grid grid-cols-12 gap-2 items-start">
-          <div className="col-span-4 space-y-1">
-            <FormField
-              control={form.control}
-              name={`items.${index}.description`}
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <Input placeholder="Nama produk/jasa" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            {catalogItems.length > 0 && (
-              <Popover
-                open={openCatalogIndex === index}
-                onOpenChange={(open) => {
-                  setOpenCatalogIndex(open ? index : null);
-                  if (!open) setCatalogQuery("");
-                }}
-              >
-                <PopoverTrigger className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 transition-colors">
-                  <BookOpen className="w-3 h-3" />
-                  Pilih dari katalog
-                </PopoverTrigger>
-                <PopoverContent className="w-72 p-2" align="start">
-                  <div className="flex items-center gap-1.5 mb-2 px-1 border rounded-md">
-                    <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <input
-                      className="flex-1 text-sm py-1.5 outline-none bg-transparent placeholder:text-slate-400"
-                      placeholder="Cari item katalog..."
-                      value={catalogQuery}
-                      onChange={(e) => setCatalogQuery(e.target.value)}
-                      autoFocus
-                    />
-                  </div>
-                  <div className="max-h-48 overflow-y-auto space-y-0.5">
-                    {filteredCatalog.length === 0 ? (
-                      <p className="text-xs text-slate-400 text-center py-3">Tidak ada item</p>
-                    ) : (
-                      filteredCatalog.map((item) => (
-                        <button
-                          key={item.id}
-                          type="button"
-                          onClick={() => applyCatalogItem(index, item)}
-                          className="w-full text-left px-2 py-1.5 rounded-md hover:bg-slate-100 transition-colors"
-                        >
-                          <p className="text-sm font-medium text-slate-800 truncate">{item.name}</p>
-                          <p className="text-xs text-slate-500">
-                            {formatCurrency(item.unitPrice, "IDR")}
-                            {item.unit && <span className="ml-1">/ {item.unit}</span>}
-                          </p>
-                        </button>
-                      ))
-                    )}
-                  </div>
-                </PopoverContent>
-              </Popover>
-            )}
-          </div>
-          <div className="col-span-2">
-            <FormField
-              control={form.control}
-              name={`items.${index}.quantity`}
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      className="text-center"
-                      {...field}
-                      onChange={(e) => {
-                        field.onChange(Number(e.target.value));
-                        handleQtyOrPriceChange(index);
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          <div className="col-span-1">
-            <FormField
-              control={form.control}
-              name={`items.${index}.unit`}
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <Input
-                      placeholder="pcs"
-                      className="text-center"
-                      {...field}
-                      value={field.value ?? ""}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-          </div>
-          <div className="col-span-2">
-            <FormField
-              control={form.control}
-              name={`items.${index}.unitPrice`}
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="1000"
-                      className="text-right"
-                      {...field}
-                      onChange={(e) => {
-                        field.onChange(Number(e.target.value));
-                        handleQtyOrPriceChange(index);
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          <div className="col-span-2 flex items-center justify-end h-10">
-            <span className="text-xs font-mono text-slate-600">
-              {formatCurrency(
-                form.watch(`items.${index}.amount`) || 0,
-                currency
-              )}
-            </span>
-          </div>
-          <div className="col-span-1 flex items-center justify-center h-10">
+        <div
+          key={field.id}
+          className="rounded-lg border border-slate-200 bg-slate-50/60 p-3 space-y-3"
+        >
+          {/* Row 1: Description + delete */}
+          <div className="flex items-start gap-2">
+            <div className="flex-1 space-y-1.5 min-w-0">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs font-medium text-slate-500">
+                  Item {index + 1}
+                </p>
+                {catalogItems.length > 0 && (
+                  <Popover
+                    open={openCatalogIndex === index}
+                    onOpenChange={(open) => {
+                      setOpenCatalogIndex(open ? index : null);
+                      if (!open) setCatalogQuery("");
+                    }}
+                  >
+                    <PopoverTrigger className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 transition-colors">
+                      <BookOpen className="w-3 h-3" />
+                      Pilih dari katalog
+                    </PopoverTrigger>
+                    <PopoverContent className="w-72 p-2" align="end">
+                      <div className="flex items-center gap-1.5 mb-2 px-1 border rounded-md">
+                        <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <input
+                          className="flex-1 text-sm py-1.5 outline-none bg-transparent placeholder:text-slate-400"
+                          placeholder="Cari item katalog..."
+                          value={catalogQuery}
+                          onChange={(e) => setCatalogQuery(e.target.value)}
+                          autoFocus
+                        />
+                      </div>
+                      <div className="max-h-48 overflow-y-auto space-y-0.5">
+                        {filteredCatalog.length === 0 ? (
+                          <p className="text-xs text-slate-400 text-center py-3">Tidak ada item</p>
+                        ) : (
+                          filteredCatalog.map((item) => (
+                            <button
+                              key={item.id}
+                              type="button"
+                              onClick={() => applyCatalogItem(index, item)}
+                              className="w-full text-left px-2 py-1.5 rounded-md hover:bg-slate-100 transition-colors"
+                            >
+                              <p className="text-sm font-medium text-slate-800 truncate">{item.name}</p>
+                              <p className="text-xs text-slate-500">
+                                {formatCurrency(item.unitPrice, "IDR")}
+                                {item.unit && <span className="ml-1">/ {item.unit}</span>}
+                              </p>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                )}
+              </div>
+
+              <FormField
+                control={form.control}
+                name={`items.${index}.description`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <Input placeholder="Nama produk atau jasa" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
             {fields.length > 1 && (
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0 text-slate-400 hover:text-red-500"
+                className="h-8 w-8 p-0 text-slate-400 hover:text-red-500 shrink-0 mt-5"
                 onClick={() => {
                   remove(index);
                   setTimeout(() => handleQtyOrPriceChange(0), 0);
@@ -244,6 +172,89 @@ export function InvoiceLineItems({ form, currency, catalogItems = [] }: InvoiceL
                 <Trash2 className="w-3.5 h-3.5" />
               </Button>
             )}
+          </div>
+
+          {/* Row 2: Qty | Satuan | Harga/Unit | Total */}
+          <div className="flex items-end gap-3">
+            <div className="w-20 shrink-0">
+              <p className="text-xs font-medium text-slate-500 mb-1">Qty</p>
+              <FormField
+                control={form.control}
+                name={`items.${index}.quantity`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        className="text-center"
+                        {...field}
+                        onChange={(e) => {
+                          field.onChange(Number(e.target.value));
+                          handleQtyOrPriceChange(index);
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="w-28 shrink-0">
+              <p className="text-xs font-medium text-slate-500 mb-1">Satuan</p>
+              <FormField
+                control={form.control}
+                name={`items.${index}.unit`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <Input
+                        placeholder="pcs, kg, jam..."
+                        {...field}
+                        value={field.value ?? ""}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-slate-500 mb-1">Harga / Unit</p>
+              <FormField
+                control={form.control}
+                name={`items.${index}.unitPrice`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="1000"
+                        className="text-right"
+                        {...field}
+                        onChange={(e) => {
+                          field.onChange(Number(e.target.value));
+                          handleQtyOrPriceChange(index);
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="shrink-0 text-right">
+              <p className="text-xs font-medium text-slate-500 mb-1">Total</p>
+              <div className="h-8 flex items-center justify-end">
+                <span className="text-sm font-mono font-semibold text-slate-800">
+                  {formatCurrency(form.watch(`items.${index}.amount`) || 0, currency)}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       ))}

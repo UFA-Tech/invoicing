@@ -108,11 +108,21 @@ export default async function InvoiceDetailPage({
         </Link>
       </div>
 
-      <PageHeader
-        title={`Invoice #${invoice.invoiceNumber}`}
-        description={`Dibuat pada ${formatDateLong(invoice.createdAt)}`}
-      >
+      {/* Title + status */}
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 truncate">
+            Invoice #{invoice.invoiceNumber}
+          </h1>
+          <p className="text-sm text-slate-500 mt-1">
+            Dibuat pada {formatDateLong(invoice.createdAt)}
+          </p>
+        </div>
         <InvoiceStatusBadge status={invoice.status} />
+      </div>
+
+      {/* Action buttons — wrap on mobile */}
+      <div className="flex flex-wrap gap-2 mb-6">
         <InvoiceShareButtons invoiceId={id} existingToken={invoice.publicToken} />
         <InvoiceDetailActions invoiceId={id} status={invoice.status} />
         <Link
@@ -130,7 +140,7 @@ export default async function InvoiceDetailPage({
           <Download className="w-4 h-4 mr-2" />
           Download PDF
         </a>
-      </PageHeader>
+      </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div className="xl:col-span-2">
