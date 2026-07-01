@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Send, CheckCircle, Trash2, Loader2 } from "lucide-react";
-import { InvoiceStatus } from "@prisma/client";
+import { InvoiceStatus } from "@/types/invoice";
 
 interface InvoiceDetailActionsProps {
   invoiceId: string;

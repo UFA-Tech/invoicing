@@ -4,7 +4,7 @@ import Image from "next/image";
 import { InvoiceFormData, BusinessProfile } from "@/types/invoice";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { InvoiceStatusBadge } from "./InvoiceStatusBadge";
-import { InvoiceStatus } from "@prisma/client";
+import { InvoiceStatus } from "@/types/invoice";
 
 interface InvoicePreviewProps {
   data: Partial<InvoiceFormData>;

@@ -39,7 +39,7 @@ import { InvoiceLineItems } from "./InvoiceLineItems";
 import { InvoicePreview } from "./InvoicePreview";
 import { BusinessProfile, CatalogItemType, ClientType, InvoiceFormData, InvoiceWithRelations } from "@/types/invoice";
 import { cn, formatCurrency } from "@/lib/utils";
-import { InvoiceStatus } from "@prisma/client";
+import { InvoiceStatus } from "@/types/invoice";
 import { TEMPLATE_META } from "@/components/invoice/templates";
 
 const invoiceSchema = z.object({

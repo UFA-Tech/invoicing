@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { InvoiceStatusBadge } from "@/components/invoice/InvoiceStatusBadge";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { InvoiceStatus } from "@prisma/client";
+import { InvoiceStatus } from "@/types/invoice";
 
 interface RecentInvoice {
   id: string;

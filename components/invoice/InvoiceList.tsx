@@ -37,7 +37,7 @@ import {
 } from "lucide-react";
 import { InvoiceStatusBadge } from "./InvoiceStatusBadge";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { InvoiceStatus } from "@prisma/client";
+import { InvoiceStatus } from "@/types/invoice";
 
 const STATUS_TABS: { label: string; value: string }[] = [
   { label: "Semua", value: "" },

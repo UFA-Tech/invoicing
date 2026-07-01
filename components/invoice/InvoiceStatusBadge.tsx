@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { InvoiceStatus } from "@prisma/client";
+import { InvoiceStatus } from "@/types/invoice";
 import { cn } from "@/lib/utils";
 
 const statusConfig: Record<
