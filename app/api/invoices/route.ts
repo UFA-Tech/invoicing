@@ -1,0 +1,163 @@
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { z } from "zod";
+import { InvoiceStatus } from "@prisma/client";
+
+const invoiceItemSchema = z.object({
+  description: z.string().min(1),
+  quantity: z.number().positive(),
+  unitPrice: z.number().positive(),
+  amount: z.number().positive(),
+  unit: z.string().optional(),
+});
+
+const invoiceSchema = z.object({
+  invoiceNumber: z.string().min(1),
+  status: z.nativeEnum(InvoiceStatus),
+  issueDate: z.string(),
+  dueDate: z.string(),
+  currency: z.string().default("IDR"),
+  template: z.string().default("classic"),
+  client: z.object({
+    id: z.string().optional(),
+    name: z.string().min(1),
+    email: z.string().email(),
+    phone: z.string().optional(),
+    address: z.string().optional(),
+    company: z.string().optional(),
+  }),
+  items: z.array(invoiceItemSchema).min(1),
+  subtotal: z.number(),
+  taxRate: z.number().default(0),
+  taxAmount: z.number().default(0),
+  discount: z.number().default(0),
+  total: z.number(),
+  notes: z.string().optional(),
+  terms: z.string().optional(),
+});
+
+export async function GET(request: NextRequest) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const status = searchParams.get("status") as InvoiceStatus | null;
+    const search = searchParams.get("search") ?? "";
+    const page = parseInt(searchParams.get("page") ?? "1");
+    const limit = parseInt(searchParams.get("limit") ?? "10");
+    const skip = (page - 1) * limit;
+
+    const where = {
+      userId: session.user.id,
+      ...(status ? { status } : {}),
+      ...(search
+        ? {
+            OR: [
+              { invoiceNumber: { contains: search, mode: "insensitive" as const } },
+              { client: { name: { contains: search, mode: "insensitive" as const } } },
+            ],
+          }
+        : {}),
+    };
+
+    const [invoices, total] = await Promise.all([
+      prisma.invoice.findMany({
+        where,
+        include: {
+          client: { select: { id: true, name: true, email: true } },
+          items: true,
+        },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.invoice.count({ where }),
+    ]);
+
+    return NextResponse.json({
+      invoices,
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+    });
+  } catch {
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const data = invoiceSchema.parse(body);
+
+    // Upsert client
+    let clientId: string | null = null;
+    if (data.client.id) {
+      const existing = await prisma.client.findFirst({
+        where: { id: data.client.id, userId: session.user.id },
+      });
+      if (existing) clientId = existing.id;
+    }
+
+    if (!clientId) {
+      const client = await prisma.client.create({
+        data: {
+          userId: session.user.id,
+          name: data.client.name,
+          email: data.client.email,
+          phone: data.client.phone,
+          address: data.client.address,
+          company: data.client.company,
+        },
+      });
+      clientId = client.id;
+    }
+
+    const invoice = await prisma.invoice.create({
+      data: {
+        userId: session.user.id,
+        clientId,
+        invoiceNumber: data.invoiceNumber,
+        status: data.status,
+        issueDate: new Date(data.issueDate),
+        dueDate: new Date(data.dueDate),
+        subtotal: data.subtotal,
+        taxRate: data.taxRate,
+        taxAmount: data.taxAmount,
+        discount: data.discount,
+        total: data.total,
+        currency: data.currency,
+        template: data.template,
+        notes: data.notes,
+        terms: data.terms,
+        items: {
+          create: data.items.map((item) => ({
+            description: item.description,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            amount: item.amount,
+            unit: item.unit,
+          })),
+        },
+      },
+      include: {
+        client: true,
+        items: true,
+      },
+    });
+
+    return NextResponse.json(invoice, { status: 201 });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: error.issues }, { status: 400 });
+    }
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
