@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -32,9 +33,11 @@ type ClientFormData = z.infer<typeof clientSchema>;
 
 interface ClientManagerProps {
   initialClients: ClientType[];
+  pagination: { page: number; pages: number; total: number };
 }
 
-export function ClientManager({ initialClients }: ClientManagerProps) {
+export function ClientManager({ initialClients, pagination }: ClientManagerProps) {
+  const router = useRouter();
   const [clients, setClients] = useState<ClientType[]>(initialClients);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -259,6 +262,25 @@ export function ClientManager({ initialClients }: ClientManagerProps) {
               </CardContent>
             </Card>
           ))}
+        </div>
+      )}
+
+      {pagination.pages > 1 && (
+        <div className="flex items-center justify-between pt-2">
+          <p className="text-xs text-slate-500 dark:text-slate-400">{pagination.total} klien total</p>
+          <div className="flex gap-1">
+            {Array.from({ length: pagination.pages }, (_, i) => i + 1).map((p) => (
+              <Button
+                key={p}
+                variant={p === pagination.page ? "default" : "outline"}
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={() => router.push(`/clients?page=${p}`)}
+              >
+                {p}
+              </Button>
+            ))}
+          </div>
         </div>
       )}
     </div>

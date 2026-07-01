@@ -1,0 +1,9 @@
+{
+  "buildCommand": "npm test && next build",
+  "crons": [
+    {
+      "path": "/api/cron/mark-overdue",
+      "schedule": "0 1 * * *"
+    }
+  ]
+}

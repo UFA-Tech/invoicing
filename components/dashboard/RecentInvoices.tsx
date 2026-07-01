@@ -23,29 +23,29 @@ export function RecentInvoices({ invoices }: { invoices: RecentInvoice[] }) {
   }
 
   return (
-    <div className="divide-y divide-slate-100">
+    <div className="divide-y divide-slate-100 dark:divide-slate-700">
       {invoices.map((invoice) => (
         <Link
           key={invoice.id}
           href={`/invoices/${invoice.id}`}
-          className="flex items-center justify-between py-3 hover:bg-slate-50 -mx-4 px-4 rounded-lg transition-colors"
+          className="flex items-center justify-between py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 -mx-4 px-4 rounded-lg transition-colors"
         >
           <div className="flex items-center gap-3">
             <div>
-              <p className="text-sm font-medium text-slate-800">
+              <p className="text-sm font-medium text-slate-800 dark:text-slate-200">
                 {invoice.client?.name ?? "—"}
               </p>
-              <p className="text-xs text-slate-400 font-mono">
+              <p className="text-xs text-slate-400 dark:text-slate-500 font-mono">
                 #{invoice.invoiceNumber}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <div className="text-right">
-              <p className="text-sm font-semibold font-mono text-slate-800">
+              <p className="text-sm font-semibold font-mono text-slate-800 dark:text-slate-200">
                 {formatCurrency(Number(invoice.total), invoice.currency)}
               </p>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-400 dark:text-slate-500">
                 {formatDate(invoice.dueDate)}
               </p>
             </div>

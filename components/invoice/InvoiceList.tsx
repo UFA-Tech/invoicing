@@ -234,8 +234,8 @@ export function InvoiceList() {
               onClick={() => updateParam("status", tab.value)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors shrink-0 ${
                 status === tab.value
-                  ? "bg-slate-900 text-white"
-                  : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+                  ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900"
+                  : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
               }`}
             >
               {tab.label}
@@ -301,7 +301,7 @@ export function InvoiceList() {
             return (
               <div
                 key={invoice.id}
-                className={`bg-white rounded-xl border border-slate-200 p-4 transition-colors ${checked ? "border-slate-400 bg-slate-50" : ""}`}
+                className={`bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 transition-colors ${checked ? "border-slate-400 dark:border-slate-500 bg-slate-50 dark:bg-slate-700" : ""}`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3 min-w-0">
@@ -315,16 +315,16 @@ export function InvoiceList() {
                       {checked && <CheckCircle className="w-3.5 h-3.5 text-white" />}
                     </button>
                     <div className="min-w-0">
-                      <Link href={`/invoices/${invoice.id}`} className="font-mono text-sm font-semibold text-slate-800 hover:text-blue-600">
+                      <Link href={`/invoices/${invoice.id}`} className="font-mono text-sm font-semibold text-slate-800 dark:text-slate-100 hover:text-blue-600">
                         #{invoice.invoiceNumber}
                       </Link>
-                      <p className="text-sm text-slate-700 truncate">{invoice.client?.name ?? "—"}</p>
-                      <p className="text-xs text-slate-400 mt-0.5">Jatuh tempo: {formatDate(invoice.dueDate)}</p>
+                      <p className="text-sm text-slate-700 dark:text-slate-300 truncate">{invoice.client?.name ?? "—"}</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Jatuh tempo: {formatDate(invoice.dueDate)}</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-2 shrink-0">
                     <div className="text-right">
-                      <p className="text-sm font-mono font-semibold text-slate-800">
+                      <p className="text-sm font-mono font-semibold text-slate-800 dark:text-slate-100">
                         {formatCurrency(Number(invoice.total), invoice.currency)}
                       </p>
                       <div className="mt-1">
@@ -332,7 +332,7 @@ export function InvoiceList() {
                       </div>
                     </div>
                     <DropdownMenu>
-                      <DropdownMenuTrigger className="inline-flex items-center justify-center h-8 w-8 rounded-md hover:bg-slate-100 transition-colors">
+                      <DropdownMenuTrigger className="inline-flex items-center justify-center h-8 w-8 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
                         <MoreHorizontal className="w-4 h-4" />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
@@ -385,10 +385,10 @@ export function InvoiceList() {
       </div>
 
       {/* Desktop table */}
-      <div className="hidden sm:block bg-white rounded-xl border border-slate-200 overflow-hidden">
+      <div className="hidden sm:block bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="bg-slate-50">
+            <TableRow className="bg-slate-50 dark:bg-slate-900/60">
               <TableHead className="w-10">
                 <button
                   onClick={toggleSelectAll}
@@ -402,12 +402,12 @@ export function InvoiceList() {
                   ) : null}
                 </button>
               </TableHead>
-              <TableHead className="text-xs font-semibold text-slate-500">No. Invoice</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-500">Klien</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-500">Tanggal</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-500">Jatuh Tempo</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-500 dark:text-slate-400">No. Invoice</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-500 dark:text-slate-400">Klien</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-500 dark:text-slate-400">Tanggal</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-500 dark:text-slate-400">Jatuh Tempo</TableHead>
               <TableHead className="text-xs font-semibold text-slate-500 text-right">Total</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-500">Status</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-500 dark:text-slate-400">Status</TableHead>
               <TableHead className="w-12" />
             </TableRow>
           </TableHeader>
@@ -430,7 +430,7 @@ export function InvoiceList() {
                 return (
                   <TableRow
                     key={invoice.id}
-                    className={`hover:bg-slate-50 transition-colors ${checked ? "bg-slate-50" : ""}`}
+                    className={`hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors ${checked ? "bg-slate-50 dark:bg-slate-700/50" : ""}`}
                   >
                     <TableCell className="w-10">
                       <button
@@ -450,12 +450,12 @@ export function InvoiceList() {
                     </TableCell>
                     <TableCell>
                       <div>
-                        <p className="text-sm font-medium text-slate-800">{invoice.client?.name ?? "—"}</p>
-                        <p className="text-xs text-slate-400">{invoice.client?.email ?? ""}</p>
+                        <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{invoice.client?.name ?? "—"}</p>
+                        <p className="text-xs text-slate-400 dark:text-slate-500">{invoice.client?.email ?? ""}</p>
                       </div>
                     </TableCell>
-                    <TableCell className="text-sm text-slate-600">{formatDate(invoice.issueDate)}</TableCell>
-                    <TableCell className="text-sm text-slate-600">{formatDate(invoice.dueDate)}</TableCell>
+                    <TableCell className="text-sm text-slate-600 dark:text-slate-400">{formatDate(invoice.issueDate)}</TableCell>
+                    <TableCell className="text-sm text-slate-600 dark:text-slate-400">{formatDate(invoice.dueDate)}</TableCell>
                     <TableCell className="text-right font-mono text-sm font-semibold">
                       {formatCurrency(Number(invoice.total), invoice.currency)}
                     </TableCell>
@@ -464,7 +464,7 @@ export function InvoiceList() {
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
-                        <DropdownMenuTrigger className="inline-flex items-center justify-center h-8 w-8 rounded-md hover:bg-slate-100 transition-colors">
+                        <DropdownMenuTrigger className="inline-flex items-center justify-center h-8 w-8 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
                           <MoreHorizontal className="w-4 h-4" />
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
@@ -520,7 +520,7 @@ export function InvoiceList() {
       {/* Pagination */}
       {pagination && pagination.pages > 1 && (
         <div className="flex items-center justify-between">
-          <p className="text-xs text-slate-500">{pagination.total} invoice total</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">{pagination.total} invoice total</p>
           <div className="flex gap-1">
             {Array.from({ length: pagination.pages }, (_, i) => i + 1).map((p) => (
               <Button

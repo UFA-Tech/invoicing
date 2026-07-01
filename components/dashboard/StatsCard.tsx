@@ -22,12 +22,12 @@ export function StatsCard({
       <CardContent className="pt-6">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
               {title}
             </p>
-            <p className="text-2xl font-bold text-slate-900 mt-1">{value}</p>
+            <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 mt-1">{value}</p>
             {subtitle && (
-              <p className="text-xs text-slate-400 mt-1">{subtitle}</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{subtitle}</p>
             )}
           </div>
           <div

@@ -107,13 +107,13 @@ export default async function DashboardPage() {
       </div>
 
       {overdueInvoices > 0 && (
-        <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-6">
+        <div className="flex items-center gap-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 rounded-xl px-4 py-3 mb-6">
           <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
           <div className="flex-1">
-            <p className="text-sm font-semibold text-red-700">
+            <p className="text-sm font-semibold text-red-700 dark:text-red-400">
               {overdueInvoices} invoice melewati jatuh tempo
             </p>
-            <p className="text-xs text-red-500">
+            <p className="text-xs text-red-500 dark:text-red-500">
               Segera hubungi klien untuk pembayaran
             </p>
           </div>

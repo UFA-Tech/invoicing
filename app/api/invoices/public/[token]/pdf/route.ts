@@ -4,6 +4,7 @@ import { renderToBuffer } from "@react-pdf/renderer";
 import { createElement } from "react";
 import { getTemplate } from "@/components/invoice/templates";
 import { logoToDataUrl } from "@/lib/logo";
+import { put } from "@vercel/blob";
 
 export async function GET(
   _request: NextRequest,
@@ -36,8 +37,25 @@ export async function GET(
 
     if (!invoice) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    const user = invoice.user;
+    const filename = `${invoice.invoiceNumber}.pdf`;
+    const headers = {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `inline; filename="${filename}"`,
+    };
 
+    // Serve from blob cache if available
+    if (invoice.pdfCacheUrl) {
+      try {
+        const cached = await fetch(invoice.pdfCacheUrl);
+        if (cached.ok) {
+          return new NextResponse(new Uint8Array(await cached.arrayBuffer()), { headers });
+        }
+      } catch {
+        // Fall through to regenerate
+      }
+    }
+
+    const user = invoice.user;
     const logoDataUrl = user?.logoUrl ? await logoToDataUrl(user.logoUrl) : null;
 
     const normalizedInvoice = {
@@ -74,14 +92,18 @@ export async function GET(
     const element = createElement(Template as any, { invoice: normalizedInvoice, business }) as any;
     const pdfBuffer = await renderToBuffer(element);
 
-    const filename = `${invoice.invoiceNumber}.pdf`;
+    // Upload to blob and persist URL
+    try {
+      const { url } = await put(`pdfs/${invoice.id}.pdf`, new Blob([new Uint8Array(pdfBuffer)], { type: "application/pdf" }), {
+        access: "public",
+        addRandomSuffix: false,
+      });
+      await prisma.invoice.update({ where: { id: invoice.id }, data: { pdfCacheUrl: url } });
+    } catch {
+      // Cache write failure is non-critical
+    }
 
-    return new NextResponse(new Uint8Array(pdfBuffer), {
-      headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": `inline; filename="${filename}"`,
-      },
-    });
+    return new NextResponse(new Uint8Array(pdfBuffer), { headers });
   } catch (error) {
     console.error("Public PDF error:", error);
     return NextResponse.json({ error: "Gagal generate PDF" }, { status: 500 });

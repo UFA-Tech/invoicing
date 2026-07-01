@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { InvoiceStatus } from "@prisma/client";
+import { del } from "@vercel/blob";
 
 const updateSchema = z.object({
   invoiceNumber: z.string().min(1).optional(),
@@ -110,6 +111,13 @@ export async function PUT(
       }
     }
 
+    const isPaidStatusChange = data.status === "PAID" && existing.status !== "PAID";
+
+    // Invalidate PDF cache on edit
+    if (existing.pdfCacheUrl) {
+      try { await del(existing.pdfCacheUrl); } catch {}
+    }
+
     const invoice = await prisma.invoice.update({
       where: { id },
       data: {
@@ -142,6 +150,12 @@ export async function PUT(
             })),
           },
         }),
+        pdfCacheUrl: null,
+        events: {
+          create: isPaidStatusChange
+            ? { type: "PAID" }
+            : { type: "EDITED" },
+        },
       },
       include: { client: true, items: true },
     });

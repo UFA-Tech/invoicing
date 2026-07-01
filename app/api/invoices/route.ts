@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { InvoiceStatus } from "@prisma/client";
+import { generateInvoiceNumber } from "@/lib/utils";
 
 const invoiceItemSchema = z.object({
   description: z.string().min(1),
@@ -120,37 +121,61 @@ export async function POST(request: NextRequest) {
       clientId = client.id;
     }
 
-    const invoice = await prisma.invoice.create({
-      data: {
-        userId: session.user.id,
-        clientId,
-        invoiceNumber: data.invoiceNumber,
-        status: data.status,
-        issueDate: new Date(data.issueDate),
-        dueDate: new Date(data.dueDate),
-        subtotal: data.subtotal,
-        taxRate: data.taxRate,
-        taxAmount: data.taxAmount,
-        discount: data.discount,
-        total: data.total,
-        currency: data.currency,
-        template: data.template,
-        notes: data.notes,
-        terms: data.terms,
-        items: {
-          create: data.items.map((item) => ({
-            description: item.description,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            amount: item.amount,
-            unit: item.unit,
-          })),
+    const userId = session.user.id;
+
+    const invoice = await prisma.$transaction(async (tx) => {
+      // Advisory lock serializes concurrent creates for the same user,
+      // preventing two simultaneous requests from computing the same sequence number.
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${userId})::bigint)`;
+
+      // If the submitted invoiceNumber was taken by a race (e.g. two tabs open),
+      // derive the next available sequence inside the lock.
+      let invoiceNumber = data.invoiceNumber;
+      const conflict = await tx.invoice.findUnique({ where: { invoiceNumber } });
+      if (conflict) {
+        const last = await tx.invoice.findFirst({
+          where: { userId },
+          orderBy: { createdAt: "desc" },
+          select: { invoiceNumber: true },
+        });
+        const prefix = invoiceNumber.match(/^[A-Za-z-]+/)?.[0] ?? "INV-";
+        const parts = last?.invoiceNumber?.split("-") ?? [];
+        const seq = parseInt(parts[parts.length - 1] ?? "0");
+        invoiceNumber = generateInvoiceNumber(prefix, isNaN(seq) ? 1 : seq + 1);
+      }
+
+      return tx.invoice.create({
+        data: {
+          userId,
+          clientId,
+          invoiceNumber,
+          status: data.status,
+          issueDate: new Date(data.issueDate),
+          dueDate: new Date(data.dueDate),
+          subtotal: data.subtotal,
+          taxRate: data.taxRate,
+          taxAmount: data.taxAmount,
+          discount: data.discount,
+          total: data.total,
+          currency: data.currency,
+          template: data.template,
+          notes: data.notes,
+          terms: data.terms,
+          items: {
+            create: data.items.map((item) => ({
+              description: item.description,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              amount: item.amount,
+              unit: item.unit,
+            })),
+          },
+          events: {
+            create: { type: "CREATED" },
+          },
         },
-      },
-      include: {
-        client: true,
-        items: true,
-      },
+        include: { client: true, items: true },
+      });
     });
 
     return NextResponse.json(invoice, { status: 201 });

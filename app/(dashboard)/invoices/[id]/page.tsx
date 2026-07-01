@@ -30,7 +30,11 @@ export default async function InvoiceDetailPage({
   const [invoice, user] = await Promise.all([
     prisma.invoice.findFirst({
       where: { id, userId: session.user.id },
-      include: { client: true, items: true },
+      include: {
+        client: true,
+        items: true,
+        events: { orderBy: { createdAt: "asc" } },
+      },
     }),
     prisma.user.findUnique({
       where: { id: session.user.id },
@@ -111,10 +115,10 @@ export default async function InvoiceDetailPage({
       {/* Title + status */}
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="min-w-0">
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 truncate">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100 truncate">
             Invoice #{invoice.invoiceNumber}
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             Dibuat pada {formatDateLong(invoice.createdAt)}
           </p>
         </div>
@@ -158,7 +162,7 @@ export default async function InvoiceDetailPage({
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-slate-500">Subtotal</span>
+                <span className="text-slate-500 dark:text-slate-400">Subtotal</span>
                 <span className="font-mono">
                   {formatCurrency(Number(invoice.subtotal), invoice.currency)}
                 </span>
@@ -193,31 +197,34 @@ export default async function InvoiceDetailPage({
             <CardHeader>
               <CardTitle className="text-sm">Riwayat</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3 text-xs text-slate-600">
-              <div className="flex items-start gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-slate-400 mt-1.5 shrink-0" />
-                <div>
-                  <p className="font-medium">Dibuat</p>
-                  <p className="text-slate-400">{formatDateLong(invoice.createdAt)}</p>
-                </div>
-              </div>
-              {invoice.sentAt && (
-                <div className="flex items-start gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
-                  <div>
-                    <p className="font-medium">Dikirim</p>
-                    <p className="text-slate-400">{formatDateLong(invoice.sentAt)}</p>
-                  </div>
-                </div>
-              )}
-              {invoice.paidAt && (
-                <div className="flex items-start gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 shrink-0" />
-                  <div>
-                    <p className="font-medium">Dibayar</p>
-                    <p className="text-slate-400">{formatDateLong(invoice.paidAt)}</p>
-                  </div>
-                </div>
+            <CardContent className="space-y-3 text-xs text-slate-600 dark:text-slate-400">
+              {invoice.events.length === 0 ? (
+                <p className="text-slate-400">Belum ada riwayat.</p>
+              ) : (
+                invoice.events.map((event) => {
+                  const dotColor =
+                    event.type === "CREATED" ? "bg-slate-400" :
+                    event.type === "SENT" ? "bg-blue-400" :
+                    event.type === "PAID" ? "bg-emerald-400" :
+                    event.type === "EDITED" ? "bg-amber-400" :
+                    "bg-slate-400";
+                  const label =
+                    event.type === "CREATED" ? "Dibuat" :
+                    event.type === "SENT" ? "Dikirim" :
+                    event.type === "PAID" ? "Dibayar" :
+                    event.type === "EDITED" ? "Diperbarui" :
+                    event.type;
+                  return (
+                    <div key={event.id} className="flex items-start gap-2">
+                      <div className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${dotColor}`} />
+                      <div>
+                        <p className="font-medium">{label}</p>
+                        {event.note && <p className="text-slate-500">{event.note}</p>}
+                        <p className="text-slate-400">{formatDateLong(event.createdAt)}</p>
+                      </div>
+                    </div>
+                  );
+                })
               )}
             </CardContent>
           </Card>

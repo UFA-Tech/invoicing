@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -31,9 +32,11 @@ type CatalogFormData = z.infer<typeof catalogSchema>;
 
 interface CatalogManagerProps {
   initialItems: CatalogItemType[];
+  pagination: { page: number; pages: number; total: number };
 }
 
-export function CatalogManager({ initialItems }: CatalogManagerProps) {
+export function CatalogManager({ initialItems, pagination }: CatalogManagerProps) {
+  const router = useRouter();
   const [items, setItems] = useState<CatalogItemType[]>(initialItems);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -253,6 +256,25 @@ export function CatalogManager({ initialItems }: CatalogManagerProps) {
               </CardContent>
             </Card>
           ))}
+        </div>
+      )}
+
+      {pagination.pages > 1 && (
+        <div className="flex items-center justify-between pt-2">
+          <p className="text-xs text-slate-500 dark:text-slate-400">{pagination.total} item total</p>
+          <div className="flex gap-1">
+            {Array.from({ length: pagination.pages }, (_, i) => i + 1).map((p) => (
+              <Button
+                key={p}
+                variant={p === pagination.page ? "default" : "outline"}
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={() => router.push(`/catalog?page=${p}`)}
+              >
+                {p}
+              </Button>
+            ))}
+          </div>
         </div>
       )}
     </div>

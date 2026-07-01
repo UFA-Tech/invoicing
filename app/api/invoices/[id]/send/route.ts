@@ -63,6 +63,9 @@ export async function POST(
       data: {
         sentAt: new Date(),
         status: "SENT",
+        events: {
+          create: { type: "SENT" },
+        },
       },
     });
 
