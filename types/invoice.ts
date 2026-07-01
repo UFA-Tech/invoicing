@@ -38,6 +38,23 @@ export interface InvoiceFormData {
   terms?: string;
 }
 
+export interface ClientType {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  address: string | null;
+  company: string | null;
+}
+
+export interface CatalogItemType {
+  id: string;
+  name: string;
+  description: string | null;
+  unitPrice: number;
+  unit: string | null;
+}
+
 export interface InvoiceWithRelations {
   id: string;
   userId: string;
@@ -55,6 +72,7 @@ export interface InvoiceWithRelations {
   template: string;
   notes: string | null;
   terms: string | null;
+  publicToken: string | null;
   sentAt: Date | null;
   paidAt: Date | null;
   createdAt: Date;

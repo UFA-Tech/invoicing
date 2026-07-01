@@ -7,12 +7,18 @@ import {
   FileText,
   Settings,
   ChevronRight,
+  Package,
+  Users,
+  BarChart2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/invoices", label: "Invoice", icon: FileText },
+  { href: "/analytics", label: "Analitik", icon: BarChart2 },
+  { href: "/clients", label: "Klien", icon: Users },
+  { href: "/catalog", label: "Katalog", icon: Package },
   { href: "/settings", label: "Pengaturan", icon: Settings },
 ];
 

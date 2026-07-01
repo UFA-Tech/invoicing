@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useFieldArray, UseFormReturn } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,26 +10,35 @@ import {
   FormItem,
   FormMessage,
 } from "@/components/ui/form";
-import { Trash2, Plus } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Trash2, Plus, BookOpen, Search } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
-import { InvoiceFormData } from "@/types/invoice";
+import { InvoiceFormData, CatalogItemType } from "@/types/invoice";
 
 interface InvoiceLineItemsProps {
   form: UseFormReturn<InvoiceFormData>;
   currency: string;
+  catalogItems?: CatalogItemType[];
 }
 
-export function InvoiceLineItems({ form, currency }: InvoiceLineItemsProps) {
+export function InvoiceLineItems({ form, currency, catalogItems = [] }: InvoiceLineItemsProps) {
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: "items",
   });
 
+  const [catalogQuery, setCatalogQuery] = useState("");
+  const [openCatalogIndex, setOpenCatalogIndex] = useState<number | null>(null);
+
   function handleQtyOrPriceChange(index: number) {
     const qty = Number(form.getValues(`items.${index}.quantity`) || 0);
     const price = Number(form.getValues(`items.${index}.unitPrice`) || 0);
     const amount = qty * price;
-    form.setValue(`items.${index}.amount`, amount);
+    form.setValue(`items.${index}.amount`, amount, { shouldDirty: true });
 
     const items = form.getValues("items");
     const subtotal = items.reduce((s, i) => s + (i.amount || 0), 0);
@@ -36,25 +46,56 @@ export function InvoiceLineItems({ form, currency }: InvoiceLineItemsProps) {
     const discount = form.getValues("discount") || 0;
     const taxAmount = subtotal * (taxRate / 100);
     const total = subtotal + taxAmount - discount;
-    form.setValue("subtotal", subtotal);
-    form.setValue("taxAmount", taxAmount);
-    form.setValue("total", total);
+    form.setValue("subtotal", subtotal, { shouldDirty: true });
+    form.setValue("taxAmount", taxAmount, { shouldDirty: true });
+    form.setValue("total", total, { shouldDirty: true });
   }
+
+  function applyCatalogItem(index: number, item: CatalogItemType) {
+    const qty = Number(form.getValues(`items.${index}.quantity`)) || 1;
+    const amount = qty * item.unitPrice;
+
+    // Use setValue per-field so each FormField subscription (including description) is notified
+    form.setValue(`items.${index}.description`, item.description || item.name, { shouldDirty: true });
+    form.setValue(`items.${index}.unitPrice`, item.unitPrice, { shouldDirty: true });
+    form.setValue(`items.${index}.unit`, item.unit ?? "", { shouldDirty: true });
+    form.setValue(`items.${index}.amount`, amount, { shouldDirty: true });
+
+    // Recalculate totals using known new amount for this index
+    const allItems = form.getValues("items");
+    const subtotal = allItems.reduce(
+      (s, it, i) => s + (i === index ? amount : it.amount || 0),
+      0
+    );
+    const taxRate = form.getValues("taxRate") || 0;
+    const discount = form.getValues("discount") || 0;
+    form.setValue("subtotal", subtotal, { shouldDirty: true });
+    form.setValue("taxAmount", subtotal * (taxRate / 100), { shouldDirty: true });
+    form.setValue("total", subtotal + subtotal * (taxRate / 100) - discount, { shouldDirty: true });
+
+    setOpenCatalogIndex(null);
+    setCatalogQuery("");
+  }
+
+  const filteredCatalog = catalogItems.filter((item) =>
+    item.name.toLowerCase().includes(catalogQuery.toLowerCase()) ||
+    (item.description ?? "").toLowerCase().includes(catalogQuery.toLowerCase())
+  );
 
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-12 gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wide pb-1 border-b">
         <div className="col-span-4">Deskripsi</div>
         <div className="col-span-2 text-center">Qty</div>
-        <div className="col-span-2 text-center">Satuan</div>
+        <div className="col-span-1 text-center">Satuan</div>
         <div className="col-span-2 text-right">Harga</div>
-        <div className="col-span-1 text-right">Total</div>
+        <div className="col-span-2 text-right">Total</div>
         <div className="col-span-1" />
       </div>
 
       {fields.map((field, index) => (
         <div key={field.id} className="grid grid-cols-12 gap-2 items-start">
-          <div className="col-span-4">
+          <div className="col-span-4 space-y-1">
             <FormField
               control={form.control}
               name={`items.${index}.description`}
@@ -67,6 +108,52 @@ export function InvoiceLineItems({ form, currency }: InvoiceLineItemsProps) {
                 </FormItem>
               )}
             />
+            {catalogItems.length > 0 && (
+              <Popover
+                open={openCatalogIndex === index}
+                onOpenChange={(open) => {
+                  setOpenCatalogIndex(open ? index : null);
+                  if (!open) setCatalogQuery("");
+                }}
+              >
+                <PopoverTrigger className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 transition-colors">
+                  <BookOpen className="w-3 h-3" />
+                  Pilih dari katalog
+                </PopoverTrigger>
+                <PopoverContent className="w-72 p-2" align="start">
+                  <div className="flex items-center gap-1.5 mb-2 px-1 border rounded-md">
+                    <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <input
+                      className="flex-1 text-sm py-1.5 outline-none bg-transparent placeholder:text-slate-400"
+                      placeholder="Cari item katalog..."
+                      value={catalogQuery}
+                      onChange={(e) => setCatalogQuery(e.target.value)}
+                      autoFocus
+                    />
+                  </div>
+                  <div className="max-h-48 overflow-y-auto space-y-0.5">
+                    {filteredCatalog.length === 0 ? (
+                      <p className="text-xs text-slate-400 text-center py-3">Tidak ada item</p>
+                    ) : (
+                      filteredCatalog.map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => applyCatalogItem(index, item)}
+                          className="w-full text-left px-2 py-1.5 rounded-md hover:bg-slate-100 transition-colors"
+                        >
+                          <p className="text-sm font-medium text-slate-800 truncate">{item.name}</p>
+                          <p className="text-xs text-slate-500">
+                            {formatCurrency(item.unitPrice, "IDR")}
+                            {item.unit && <span className="ml-1">/ {item.unit}</span>}
+                          </p>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
           </div>
           <div className="col-span-2">
             <FormField
@@ -92,7 +179,7 @@ export function InvoiceLineItems({ form, currency }: InvoiceLineItemsProps) {
               )}
             />
           </div>
-          <div className="col-span-2">
+          <div className="col-span-1">
             <FormField
               control={form.control}
               name={`items.${index}.unit`}
@@ -134,7 +221,7 @@ export function InvoiceLineItems({ form, currency }: InvoiceLineItemsProps) {
               )}
             />
           </div>
-          <div className="col-span-1 flex items-center justify-end h-10">
+          <div className="col-span-2 flex items-center justify-end h-10">
             <span className="text-xs font-mono text-slate-600">
               {formatCurrency(
                 form.watch(`items.${index}.amount`) || 0,

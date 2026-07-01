@@ -16,6 +16,7 @@ import { Separator } from "@/components/ui/separator";
 import { Pencil, Download, ArrowLeft } from "lucide-react";
 import { cn, formatCurrency, formatDateLong } from "@/lib/utils";
 import { InvoiceDetailActions } from "@/components/invoice/InvoiceDetailActions";
+import { InvoiceShareButtons } from "@/components/invoice/InvoiceShareButtons";
 
 export default async function InvoiceDetailPage({
   params,
@@ -112,6 +113,7 @@ export default async function InvoiceDetailPage({
         description={`Dibuat pada ${formatDateLong(invoice.createdAt)}`}
       >
         <InvoiceStatusBadge status={invoice.status} />
+        <InvoiceShareButtons invoiceId={id} existingToken={invoice.publicToken} />
         <InvoiceDetailActions invoiceId={id} status={invoice.status} />
         <Link
           href={`/invoices/${id}/edit`}
@@ -132,7 +134,11 @@ export default async function InvoiceDetailPage({
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div className="xl:col-span-2">
-          <InvoicePreview data={previewData} business={business} />
+          <InvoicePreview
+            data={previewData}
+            business={business}
+            template={invoice.template ?? business.defaultTemplate ?? "classic"}
+          />
         </div>
 
         <div className="space-y-4">

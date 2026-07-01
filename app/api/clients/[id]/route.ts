@@ -11,29 +11,24 @@ const clientSchema = z.object({
   company: z.string().optional(),
 });
 
-export async function GET() {
+export async function PUT(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const clients = await prisma.client.findMany({
-    where: { userId: session.user.id },
-    orderBy: { name: "asc" },
-  });
-
-  return NextResponse.json(clients);
-}
-
-export async function POST(req: Request) {
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
+  const { id } = await params;
   const body = await req.json();
   const parsed = clientSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues }, { status: 400 });
 
-  const client = await prisma.client.create({
+  const existing = await prisma.client.findFirst({ where: { id, userId: session.user.id } });
+  if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const client = await prisma.client.update({
+    where: { id },
     data: {
-      userId: session.user.id,
       name: parsed.data.name,
       email: parsed.data.email,
       phone: parsed.data.phone || null,
@@ -43,4 +38,19 @@ export async function POST(req: Request) {
   });
 
   return NextResponse.json(client);
+}
+
+export async function DELETE(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await auth();
+  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { id } = await params;
+  const existing = await prisma.client.findFirst({ where: { id, userId: session.user.id } });
+  if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  await prisma.client.delete({ where: { id } });
+  return NextResponse.json({ success: true });
 }

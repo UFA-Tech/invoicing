@@ -31,6 +31,9 @@ import {
   Search,
   CheckCircle,
   Loader2,
+  FileDown,
+  CheckSquare,
+  X,
 } from "lucide-react";
 import { InvoiceStatusBadge } from "./InvoiceStatusBadge";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -73,6 +76,8 @@ export function InvoiceList() {
   const [pagination, setPagination] = useState<Pagination | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkLoading, setBulkLoading] = useState(false);
 
   const status = searchParams.get("status") ?? "";
   const search = searchParams.get("search") ?? "";
@@ -80,6 +85,7 @@ export function InvoiceList() {
 
   const fetchInvoices = useCallback(async () => {
     setLoading(true);
+    setSelectedIds(new Set());
     try {
       const params = new URLSearchParams();
       if (status) params.set("status", status);
@@ -100,13 +106,27 @@ export function InvoiceList() {
 
   function updateParam(key: string, value: string) {
     const params = new URLSearchParams(searchParams);
-    if (value) {
-      params.set(key, value);
-    } else {
-      params.delete(key);
-    }
+    if (value) params.set(key, value);
+    else params.delete(key);
     if (key !== "page") params.delete("page");
     router.push(`/invoices?${params}`);
+  }
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (selectedIds.size === invoices.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(invoices.map((i) => i.id)));
+    }
   }
 
   async function handleDelete(id: string) {
@@ -114,7 +134,7 @@ export function InvoiceList() {
     setActionLoading(id + "-delete");
     try {
       const res = await fetch(`/api/invoices/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Gagal menghapus");
+      if (!res.ok) throw new Error();
       toast.success("Invoice dihapus");
       fetchInvoices();
     } catch {
@@ -128,7 +148,7 @@ export function InvoiceList() {
     setActionLoading(id + "-send");
     try {
       const res = await fetch(`/api/invoices/${id}/send`, { method: "POST" });
-      if (!res.ok) throw new Error("Gagal mengirim");
+      if (!res.ok) throw new Error();
       toast.success("Invoice berhasil dikirim ke email klien");
       fetchInvoices();
     } catch {
@@ -146,7 +166,7 @@ export function InvoiceList() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "PAID", paidAt: new Date().toISOString() }),
       });
-      if (!res.ok) throw new Error("Gagal memperbarui");
+      if (!res.ok) throw new Error();
       toast.success("Invoice ditandai lunas");
       fetchInvoices();
     } catch {
@@ -156,10 +176,38 @@ export function InvoiceList() {
     }
   }
 
+  function exportCsv(ids?: string[]) {
+    const params = ids?.length ? `?ids=${ids.join(",")}` : "";
+    window.location.href = `/api/invoices/export${params}`;
+  }
+
+  async function handleBulkAction(action: "markPaid" | "delete") {
+    const ids = Array.from(selectedIds);
+    if (action === "delete" && !confirm(`Hapus ${ids.length} invoice?`)) return;
+    setBulkLoading(true);
+    try {
+      const res = await fetch("/api/invoices/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids, action }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success(action === "markPaid" ? `${ids.length} invoice ditandai lunas` : `${ids.length} invoice dihapus`);
+      fetchInvoices();
+    } catch {
+      toast.error("Gagal memproses bulk action");
+    } finally {
+      setBulkLoading(false);
+    }
+  }
+
+  const allSelected = invoices.length > 0 && selectedIds.size === invoices.length;
+  const someSelected = selectedIds.size > 0;
+
   return (
     <div className="space-y-4">
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      {/* Filters + export */}
+      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
         <div className="relative flex-1 max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <Input
@@ -173,7 +221,7 @@ export function InvoiceList() {
             }}
           />
         </div>
-        <div className="flex gap-1 flex-wrap">
+        <div className="flex gap-1 flex-wrap flex-1">
           {STATUS_TABS.map((tab) => (
             <button
               key={tab.value}
@@ -188,13 +236,71 @@ export function InvoiceList() {
             </button>
           ))}
         </div>
+        <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={() => exportCsv()}>
+          <FileDown className="w-4 h-4" />
+          Export CSV
+        </Button>
       </div>
+
+      {/* Bulk action bar */}
+      {someSelected && (
+        <div className="flex items-center gap-3 bg-slate-900 text-white rounded-xl px-4 py-2.5">
+          <span className="text-sm font-medium">{selectedIds.size} dipilih</span>
+          <div className="flex gap-2 ml-auto items-center">
+            <Button
+              size="sm"
+              className="h-7 text-xs bg-slate-700 hover:bg-slate-600 text-white border-0"
+              onClick={() => exportCsv(Array.from(selectedIds))}
+            >
+              <FileDown className="w-3.5 h-3.5 mr-1" />
+              Export
+            </Button>
+            <Button
+              size="sm"
+              className="h-7 text-xs bg-emerald-600 hover:bg-emerald-500 text-white border-0"
+              onClick={() => handleBulkAction("markPaid")}
+              disabled={bulkLoading}
+            >
+              <CheckCircle className="w-3.5 h-3.5 mr-1" />
+              Tandai Lunas
+            </Button>
+            <Button
+              size="sm"
+              className="h-7 text-xs bg-red-600 hover:bg-red-500 text-white border-0"
+              onClick={() => handleBulkAction("delete")}
+              disabled={bulkLoading}
+            >
+              <Trash2 className="w-3.5 h-3.5 mr-1" />
+              Hapus
+            </Button>
+            <button
+              className="ml-1 text-slate-500 hover:text-white transition-colors"
+              onClick={() => setSelectedIds(new Set())}
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Table */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow className="bg-slate-50">
+              <TableHead className="w-10">
+                <button
+                  onClick={toggleSelectAll}
+                  className="flex items-center justify-center w-5 h-5 rounded border border-slate-300 hover:border-slate-500 transition-colors"
+                  aria-label="Pilih semua"
+                >
+                  {allSelected ? (
+                    <CheckSquare className="w-4 h-4 text-slate-700" />
+                  ) : someSelected ? (
+                    <div className="w-2.5 h-0.5 bg-slate-500 rounded" />
+                  ) : null}
+                </button>
+              </TableHead>
               <TableHead className="text-xs font-semibold text-slate-500">No. Invoice</TableHead>
               <TableHead className="text-xs font-semibold text-slate-500">Klien</TableHead>
               <TableHead className="text-xs font-semibold text-slate-500">Tanggal</TableHead>
@@ -207,113 +313,104 @@ export function InvoiceList() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-12">
+                <TableCell colSpan={8} className="text-center py-12">
                   <Loader2 className="w-5 h-5 animate-spin text-slate-400 mx-auto" />
                 </TableCell>
               </TableRow>
             ) : invoices.length === 0 ? (
               <TableRow>
-                <TableCell
-                  colSpan={7}
-                  className="text-center py-12 text-slate-400 text-sm"
-                >
-                  {search || status
-                    ? "Tidak ada invoice yang cocok"
-                    : "Belum ada invoice. Buat invoice pertama Anda!"}
+                <TableCell colSpan={8} className="text-center py-12 text-slate-400 text-sm">
+                  {search || status ? "Tidak ada invoice yang cocok" : "Belum ada invoice. Buat invoice pertama Anda!"}
                 </TableCell>
               </TableRow>
             ) : (
-              invoices.map((invoice) => (
-                <TableRow key={invoice.id} className="hover:bg-slate-50">
-                  <TableCell className="font-mono text-sm font-medium">
-                    <Link
-                      href={`/invoices/${invoice.id}`}
-                      className="hover:text-blue-600"
-                    >
-                      #{invoice.invoiceNumber}
-                    </Link>
-                  </TableCell>
-                  <TableCell>
-                    <div>
-                      <p className="text-sm font-medium text-slate-800">
-                        {invoice.client?.name ?? "—"}
-                      </p>
-                      <p className="text-xs text-slate-400">
-                        {invoice.client?.email ?? ""}
-                      </p>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-sm text-slate-600">
-                    {formatDate(invoice.issueDate)}
-                  </TableCell>
-                  <TableCell className="text-sm text-slate-600">
-                    {formatDate(invoice.dueDate)}
-                  </TableCell>
-                  <TableCell className="text-right font-mono text-sm font-semibold">
-                    {formatCurrency(Number(invoice.total), invoice.currency)}
-                  </TableCell>
-                  <TableCell>
-                    <InvoiceStatusBadge status={invoice.status} />
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger className="inline-flex items-center justify-center h-8 w-8 rounded-md hover:bg-slate-100 transition-colors">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => router.push(`/invoices/${invoice.id}`)}>
-                          <Eye className="w-4 h-4 mr-2" />
-                          Lihat
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => router.push(`/invoices/${invoice.id}/edit`)}>
-                          <Pencil className="w-4 h-4 mr-2" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => {
-                            const a = document.createElement("a");
-                            a.href = `/api/invoices/${invoice.id}/pdf`;
-                            a.download = `${invoice.invoiceNumber}.pdf`;
-                            a.click();
-                          }}
-                        >
-                          <Download className="w-4 h-4 mr-2" />
-                          Download PDF
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleSend(invoice.id)}
-                          disabled={actionLoading === invoice.id + "-send"}
-                        >
-                          {actionLoading === invoice.id + "-send" ? (
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          ) : (
-                            <Send className="w-4 h-4 mr-2" />
-                          )}
-                          Kirim Email
-                        </DropdownMenuItem>
-                        {invoice.status !== "PAID" && (
-                          <DropdownMenuItem
-                            onClick={() => handleMarkPaid(invoice.id)}
-                            disabled={actionLoading === invoice.id + "-paid"}
-                          >
-                            <CheckCircle className="w-4 h-4 mr-2" />
-                            Tandai Lunas
+              invoices.map((invoice) => {
+                const checked = selectedIds.has(invoice.id);
+                return (
+                  <TableRow
+                    key={invoice.id}
+                    className={`hover:bg-slate-50 transition-colors ${checked ? "bg-slate-50" : ""}`}
+                  >
+                    <TableCell className="w-10">
+                      <button
+                        onClick={() => toggleSelect(invoice.id)}
+                        className={`flex items-center justify-center w-5 h-5 rounded border transition-colors ${
+                          checked ? "bg-slate-900 border-slate-900" : "border-slate-300 hover:border-slate-500"
+                        }`}
+                        aria-label="Pilih invoice"
+                      >
+                        {checked && <CheckCircle className="w-3.5 h-3.5 text-white" />}
+                      </button>
+                    </TableCell>
+                    <TableCell className="font-mono text-sm font-medium">
+                      <Link href={`/invoices/${invoice.id}`} className="hover:text-blue-600">
+                        #{invoice.invoiceNumber}
+                      </Link>
+                    </TableCell>
+                    <TableCell>
+                      <div>
+                        <p className="text-sm font-medium text-slate-800">{invoice.client?.name ?? "—"}</p>
+                        <p className="text-xs text-slate-400">{invoice.client?.email ?? ""}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm text-slate-600">{formatDate(invoice.issueDate)}</TableCell>
+                    <TableCell className="text-sm text-slate-600">{formatDate(invoice.dueDate)}</TableCell>
+                    <TableCell className="text-right font-mono text-sm font-semibold">
+                      {formatCurrency(Number(invoice.total), invoice.currency)}
+                    </TableCell>
+                    <TableCell>
+                      <InvoiceStatusBadge status={invoice.status} />
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger className="inline-flex items-center justify-center h-8 w-8 rounded-md hover:bg-slate-100 transition-colors">
+                          <MoreHorizontal className="w-4 h-4" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => router.push(`/invoices/${invoice.id}`)}>
+                            <Eye className="w-4 h-4 mr-2" />
+                            Lihat
                           </DropdownMenuItem>
-                        )}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          variant="destructive"
-                          onClick={() => handleDelete(invoice.id)}
-                          disabled={actionLoading === invoice.id + "-delete"}
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Hapus
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
+                          <DropdownMenuItem onClick={() => router.push(`/invoices/${invoice.id}/edit`)}>
+                            <Pencil className="w-4 h-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              const a = document.createElement("a");
+                              a.href = `/api/invoices/${invoice.id}/pdf`;
+                              a.download = `${invoice.invoiceNumber}.pdf`;
+                              a.click();
+                            }}
+                          >
+                            <Download className="w-4 h-4 mr-2" />
+                            Download PDF
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleSend(invoice.id)} disabled={actionLoading === invoice.id + "-send"}>
+                            {actionLoading === invoice.id + "-send" ? (
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            ) : (
+                              <Send className="w-4 h-4 mr-2" />
+                            )}
+                            Kirim Email
+                          </DropdownMenuItem>
+                          {invoice.status !== "PAID" && (
+                            <DropdownMenuItem onClick={() => handleMarkPaid(invoice.id)} disabled={actionLoading === invoice.id + "-paid"}>
+                              <CheckCircle className="w-4 h-4 mr-2" />
+                              Tandai Lunas
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem variant="destructive" onClick={() => handleDelete(invoice.id)} disabled={actionLoading === invoice.id + "-delete"}>
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Hapus
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>
@@ -322,9 +419,7 @@ export function InvoiceList() {
       {/* Pagination */}
       {pagination && pagination.pages > 1 && (
         <div className="flex items-center justify-between">
-          <p className="text-xs text-slate-500">
-            {pagination.total} invoice total
-          </p>
+          <p className="text-xs text-slate-500">{pagination.total} invoice total</p>
           <div className="flex gap-1">
             {Array.from({ length: pagination.pages }, (_, i) => i + 1).map((p) => (
               <Button

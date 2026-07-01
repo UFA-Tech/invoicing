@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
-import { CalendarIcon, Loader2 } from "lucide-react";
+import { CalendarIcon, Loader2, Users, Search, Check } from "lucide-react";
 import {
   Form,
   FormControl,
@@ -37,7 +37,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { InvoiceLineItems } from "./InvoiceLineItems";
 import { InvoicePreview } from "./InvoicePreview";
-import { BusinessProfile, InvoiceFormData, InvoiceWithRelations } from "@/types/invoice";
+import { BusinessProfile, CatalogItemType, ClientType, InvoiceFormData, InvoiceWithRelations } from "@/types/invoice";
 import { cn, formatCurrency } from "@/lib/utils";
 import { InvoiceStatus } from "@prisma/client";
 import { TEMPLATE_META } from "@/components/invoice/templates";
@@ -86,6 +86,39 @@ interface InvoiceFormProps {
 export function InvoiceForm({ business, invoiceToEdit, nextInvoiceNumber }: InvoiceFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [catalogItems, setCatalogItems] = useState<CatalogItemType[]>([]);
+  const [savedClients, setSavedClients] = useState<ClientType[]>([]);
+  const [clientQuery, setClientQuery] = useState("");
+  const [clientPickerOpen, setClientPickerOpen] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/catalog")
+      .then((r) => r.json())
+      .then((data) => Array.isArray(data) && setCatalogItems(data))
+      .catch(() => {});
+    fetch("/api/clients")
+      .then((r) => r.json())
+      .then((data) => Array.isArray(data) && setSavedClients(data))
+      .catch(() => {});
+  }, []);
+
+  function applyClient(client: ClientType) {
+    form.setValue("client.id", client.id);
+    form.setValue("client.name", client.name);
+    form.setValue("client.email", client.email);
+    form.setValue("client.phone", client.phone ?? "");
+    form.setValue("client.address", client.address ?? "");
+    form.setValue("client.company", client.company ?? "");
+    setClientPickerOpen(false);
+    setClientQuery("");
+  }
+
+  const filteredClients = savedClients.filter(
+    (c) =>
+      c.name.toLowerCase().includes(clientQuery.toLowerCase()) ||
+      (c.company ?? "").toLowerCase().includes(clientQuery.toLowerCase()) ||
+      c.email.toLowerCase().includes(clientQuery.toLowerCase())
+  );
 
   const form = useForm<InvoiceFormData>({
     resolver: zodResolver(invoiceSchema),
@@ -148,9 +181,9 @@ export function InvoiceForm({ business, invoiceToEdit, nextInvoiceNumber }: Invo
     const discount = form.getValues("discount") || 0;
     const taxAmount = subtotal * (taxRate / 100);
     const total = subtotal + taxAmount - discount;
-    form.setValue("subtotal", subtotal);
-    form.setValue("taxAmount", taxAmount);
-    form.setValue("total", total);
+    form.setValue("subtotal", subtotal, { shouldDirty: true });
+    form.setValue("taxAmount", taxAmount, { shouldDirty: true });
+    form.setValue("total", total, { shouldDirty: true });
   }
 
   async function onSubmit(values: InvoiceFormData) {
@@ -333,8 +366,55 @@ export function InvoiceForm({ business, invoiceToEdit, nextInvoiceNumber }: Invo
 
             {/* Client Info */}
             <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Data Klien</CardTitle>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base">Data Klien</CardTitle>
+                  {savedClients.length > 0 && (
+                    <Popover open={clientPickerOpen} onOpenChange={(open) => { setClientPickerOpen(open); if (!open) setClientQuery(""); }}>
+                      <PopoverTrigger className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 transition-colors border border-slate-200 rounded-md px-2.5 py-1.5 hover:border-slate-300">
+                        <Users className="w-3.5 h-3.5" />
+                        Pilih dari daftar klien
+                      </PopoverTrigger>
+                      <PopoverContent className="w-80 p-2" align="end">
+                        <div className="flex items-center gap-1.5 mb-2 px-1 border rounded-md">
+                          <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <input
+                            className="flex-1 text-sm py-1.5 outline-none bg-transparent placeholder:text-slate-400"
+                            placeholder="Cari nama, perusahaan, atau email..."
+                            value={clientQuery}
+                            onChange={(e) => setClientQuery(e.target.value)}
+                            autoFocus
+                          />
+                        </div>
+                        <div className="max-h-56 overflow-y-auto space-y-0.5">
+                          {filteredClients.length === 0 ? (
+                            <p className="text-xs text-slate-400 text-center py-3">Tidak ada klien ditemukan</p>
+                          ) : (
+                            filteredClients.map((client) => {
+                              const isActive = form.watch("client.id") === client.id;
+                              return (
+                                <button
+                                  key={client.id}
+                                  type="button"
+                                  onClick={() => applyClient(client)}
+                                  className="w-full text-left px-2 py-2 rounded-md hover:bg-slate-100 transition-colors flex items-center gap-2"
+                                >
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-sm font-medium text-slate-800 truncate">{client.name}</p>
+                                    <p className="text-xs text-slate-400 truncate">
+                                      {client.company ? `${client.company} · ` : ""}{client.email}
+                                    </p>
+                                  </div>
+                                  {isActive && <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />}
+                                </button>
+                              );
+                            })
+                          )}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -415,6 +495,7 @@ export function InvoiceForm({ business, invoiceToEdit, nextInvoiceNumber }: Invo
                 <InvoiceLineItems
                   form={form as never}
                   currency={watchedValues.currency ?? "IDR"}
+                  catalogItems={catalogItems}
                 />
               </CardContent>
             </Card>

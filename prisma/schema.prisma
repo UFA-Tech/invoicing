@@ -26,10 +26,11 @@ model User {
   defaultCurrency String?  @default("IDR")
   defaultTerms    String?  @db.Text
 
-  accounts Account[]
-  sessions Session[]
-  invoices Invoice[]
-  clients  Client[]
+  accounts     Account[]
+  sessions     Session[]
+  invoices     Invoice[]
+  clients      Client[]
+  catalogItems CatalogItem[]
 }
 
 model Account {
@@ -104,6 +105,8 @@ model Invoice {
   notes    String? @db.Text
   terms    String? @db.Text
 
+  publicToken String?   @unique
+
   sentAt DateTime?
   paidAt DateTime?
 
@@ -125,6 +128,19 @@ model InvoiceItem {
   unit        String?
 
   invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+}
+
+model CatalogItem {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  unitPrice   Decimal  @db.Decimal(15, 2)
+  unit        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 enum InvoiceStatus {
