@@ -56,7 +56,7 @@ export async function POST(
       },
       include: { events: { orderBy: { createdAt: "desc" }, take: 1 } },
     });
-    const sentEventId = updated.events[0]?.id;
+    const sentEventId = updated.events?.[0]?.id;
 
     try {
       // Generate PDF buffer
