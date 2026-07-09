@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { InvoiceStatus } from "@prisma/client";
 import { del } from "@vercel/blob";
+import { calculateInvoiceTotals } from "@/lib/utils";
 
 const updateSchema = z.object({
   invoiceNumber: z.string().min(1).optional(),
@@ -112,6 +113,48 @@ export async function PUT(
     }
 
     const isPaidStatusChange = data.status === "PAID" && existing.status !== "PAID";
+    const isUnpaidStatusChange =
+      !!data.status && data.status !== "PAID" && existing.status === "PAID";
+
+    // paidAt precedence: an explicit value in the request always wins (this is
+    // how the "Tandai Lunas" quick action sets it). Otherwise, derive it from
+    // the status transition so that marking PAID via the edit form's status
+    // dropdown doesn't leave paidAt null (which would hide the invoice from
+    // every paidAt-filtered revenue query), and reverting away from PAID
+    // clears the stale paidAt.
+    let paidAtUpdate: { paidAt: Date | null } | Record<string, never> = {};
+    if (data.paidAt !== undefined) {
+      paidAtUpdate = { paidAt: data.paidAt ? new Date(data.paidAt) : null };
+    } else if (isPaidStatusChange) {
+      paidAtUpdate = { paidAt: new Date() };
+    } else if (isUnpaidStatusChange) {
+      paidAtUpdate = { paidAt: null };
+    }
+
+    // Recompute totals server-side rather than trusting the client-submitted
+    // subtotal/taxAmount/total/item.amount whenever items, taxRate, or
+    // discount are part of this update — those values can drift from the
+    // actual line items due to stale form state or client bugs.
+    const shouldRecalcTotals =
+      data.items !== undefined || data.taxRate !== undefined || data.discount !== undefined;
+    const recalculated = shouldRecalcTotals
+      ? calculateInvoiceTotals(
+          data.items ??
+            existing.items.map((item) => ({
+              quantity: Number(item.quantity),
+              unitPrice: Number(item.unitPrice),
+            })),
+          data.taxRate ?? Number(existing.taxRate),
+          data.discount ?? Number(existing.discount)
+        )
+      : null;
+    const itemsPayload = data.items?.map((item, index) => ({
+      description: item.description,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      amount: recalculated!.itemAmounts[index],
+      unit: item.unit,
+    }));
 
     // Invalidate PDF cache on edit
     if (existing.pdfCacheUrl) {
@@ -127,27 +170,21 @@ export async function PUT(
         ...(data.dueDate && { dueDate: new Date(data.dueDate) }),
         ...(data.currency && { currency: data.currency }),
         ...(data.template && { template: data.template }),
-        ...(data.subtotal !== undefined && { subtotal: data.subtotal }),
         ...(data.taxRate !== undefined && { taxRate: data.taxRate }),
-        ...(data.taxAmount !== undefined && { taxAmount: data.taxAmount }),
         ...(data.discount !== undefined && { discount: data.discount }),
-        ...(data.total !== undefined && { total: data.total }),
+        ...(recalculated && {
+          subtotal: recalculated.subtotal,
+          taxAmount: recalculated.taxAmount,
+          total: recalculated.total,
+        }),
         ...(data.notes !== undefined && { notes: data.notes }),
         ...(data.terms !== undefined && { terms: data.terms }),
-        ...(data.paidAt !== undefined && {
-          paidAt: data.paidAt ? new Date(data.paidAt) : null,
-        }),
+        ...paidAtUpdate,
         clientId,
-        ...(data.items && {
+        ...(itemsPayload && {
           items: {
             deleteMany: {},
-            create: data.items.map((item) => ({
-              description: item.description,
-              quantity: item.quantity,
-              unitPrice: item.unitPrice,
-              amount: item.amount,
-              unit: item.unit,
-            })),
+            create: itemsPayload,
           },
         }),
         pdfCacheUrl: null,

@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { InvoiceStatus } from "@prisma/client";
-import { generateInvoiceNumber } from "@/lib/utils";
+import { calculateInvoiceTotals, generateInvoiceNumber } from "@/lib/utils";
 
 const invoiceItemSchema = z.object({
   description: z.string().min(1),
@@ -123,6 +123,15 @@ export async function POST(request: NextRequest) {
 
     const userId = session.user.id;
 
+    // Recompute totals server-side rather than trusting the client-submitted
+    // subtotal/taxAmount/total/item.amount, which can drift from the actual
+    // line items due to stale form state or client bugs.
+    const { itemAmounts, subtotal, taxAmount, total } = calculateInvoiceTotals(
+      data.items,
+      data.taxRate,
+      data.discount
+    );
+
     const invoice = await prisma.$transaction(async (tx) => {
       // Advisory lock serializes concurrent creates for the same user,
       // preventing two simultaneous requests from computing the same sequence number.
@@ -152,21 +161,21 @@ export async function POST(request: NextRequest) {
           status: data.status,
           issueDate: new Date(data.issueDate),
           dueDate: data.dueDate ? new Date(data.dueDate) : null,
-          subtotal: data.subtotal,
+          subtotal,
           taxRate: data.taxRate,
-          taxAmount: data.taxAmount,
+          taxAmount,
           discount: data.discount,
-          total: data.total,
+          total,
           currency: data.currency,
           template: data.template,
           notes: data.notes,
           terms: data.terms,
           items: {
-            create: data.items.map((item) => ({
+            create: data.items.map((item, index) => ({
               description: item.description,
               quantity: item.quantity,
               unitPrice: item.unitPrice,
-              amount: item.amount,
+              amount: itemAmounts[index],
               unit: item.unit,
             })),
           },
